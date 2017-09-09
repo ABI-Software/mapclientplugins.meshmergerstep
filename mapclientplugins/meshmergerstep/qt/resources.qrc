@@ -1,0 +1,6 @@
+
+<RCC>
+  <qresource prefix="meshmergerstep">
+    <file>images/fitting.png</file>
+  </qresource>
+</RCC>

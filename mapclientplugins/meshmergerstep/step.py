@@ -3,11 +3,14 @@
 MAP Client Plugin Step
 """
 import json
+import os
 
 from PySide import QtGui
 
 from mapclient.mountpoints.workflowstep import WorkflowStepMountPoint
 from mapclientplugins.meshmergerstep.configuredialog import ConfigureDialog
+from mapclientplugins.meshmergerstep.model.meshmergermodel import MeshMergerModel
+from mapclientplugins.meshmergerstep.view.meshmergerwidget import MeshMergerWidget
 
 
 class MeshMergerStep(WorkflowStepMountPoint):
@@ -39,15 +42,19 @@ class MeshMergerStep(WorkflowStepMountPoint):
         # Config:
         self._config = {}
         self._config['identifier'] = ''
+        self._model = None
+        self._view = None
 
     def execute(self):
         """
-        Add your code here that will kick off the execution of the step.
-        Make sure you call the _doneExecution() method when finished.  This method
-        may be connected up to a button in a widget for example.
+        Kick off the execution of the step, in this case an interactive dialog.
+        User invokes the _doneExecution() method when finished, via pushbutton.
         """
-        # Put your execute step code here before calling the '_doneExecution' method.
-        self._doneExecution()
+        self._model = MeshMergerModel(os.path.join(self._location, self._config['identifier']),
+            self._portData0, self._portData1)
+        self._view = MeshMergerWidget(self._model)
+        self._view.registerDoneExecution(self._doneExecution)
+        self._setCurrentWidget(self._view)
 
     def setPortData(self, index, dataIn):
         """
@@ -71,6 +78,7 @@ class MeshMergerStep(WorkflowStepMountPoint):
 
         :param index: Index of the port to return.
         """
+        self._portData2 = self._model.getOutputModelFilename()
         return self._portData2 # http://physiomeproject.org/workflow/1.0/rdf-schema#file_location
 
     def configure(self):

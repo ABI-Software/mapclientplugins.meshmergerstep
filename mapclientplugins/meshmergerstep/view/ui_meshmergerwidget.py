@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapclientplugins\meshmergerstep\qt\meshmergerwidget.ui'
 #
-# Created: Sun Sep 10 17:29:32 2017
+# Created: Mon Sep 11 15:53:15 2017
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -66,11 +66,29 @@ class Ui_MeshMergerWidget(object):
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.verticalLayout_3 = QtGui.QVBoxLayout()
         self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.identifier_frame = QtGui.QFrame(self.scrollAreaWidgetContents_2)
+        self.identifier_frame.setMinimumSize(QtCore.QSize(0, 0))
+        self.identifier_frame.setFrameShape(QtGui.QFrame.StyledPanel)
+        self.identifier_frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.identifier_frame.setObjectName("identifier_frame")
+        self.verticalLayout_5 = QtGui.QVBoxLayout(self.identifier_frame)
+        self.verticalLayout_5.setContentsMargins(-1, 5, -1, 3)
+        self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.identifier_label = QtGui.QLabel(self.identifier_frame)
+        self.identifier_label.setObjectName("identifier_label")
+        self.verticalLayout_5.addWidget(self.identifier_label)
+        self.line = QtGui.QFrame(self.identifier_frame)
+        self.line.setFrameShape(QtGui.QFrame.HLine)
+        self.line.setFrameShadow(QtGui.QFrame.Sunken)
+        self.line.setObjectName("line")
+        self.verticalLayout_5.addWidget(self.line)
+        self.verticalLayout_3.addWidget(self.identifier_frame)
         self.mergeOptions_frame = QtGui.QFrame(self.scrollAreaWidgetContents_2)
         self.mergeOptions_frame.setFrameShape(QtGui.QFrame.StyledPanel)
         self.mergeOptions_frame.setFrameShadow(QtGui.QFrame.Raised)
         self.mergeOptions_frame.setObjectName("mergeOptions_frame")
         self.verticalLayout_4 = QtGui.QVBoxLayout(self.mergeOptions_frame)
+        self.verticalLayout_4.setContentsMargins(-1, 3, -1, -1)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.mergeNodes_label = QtGui.QLabel(self.mergeOptions_frame)
         self.mergeNodes_label.setObjectName("mergeNodes_label")
@@ -110,6 +128,7 @@ class Ui_MeshMergerWidget(object):
         self.verticalLayout_7 = QtGui.QVBoxLayout(self.displayOptions_groupBox)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self.displayAxes_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
+        self.displayAxes_checkBox.setEnabled(False)
         self.displayAxes_checkBox.setObjectName("displayAxes_checkBox")
         self.verticalLayout_7.addWidget(self.displayAxes_checkBox)
         self.displayLines_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
@@ -125,9 +144,11 @@ class Ui_MeshMergerWidget(object):
         self.displayNodeNumbers_checkBox.setObjectName("displayNodeNumbers_checkBox")
         self.verticalLayout_7.addWidget(self.displayNodeNumbers_checkBox)
         self.displayNodeDerivatives_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
+        self.displayNodeDerivatives_checkBox.setEnabled(False)
         self.displayNodeDerivatives_checkBox.setObjectName("displayNodeDerivatives_checkBox")
         self.verticalLayout_7.addWidget(self.displayNodeDerivatives_checkBox)
         self.displayXiAxes_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
+        self.displayXiAxes_checkBox.setEnabled(False)
         self.displayXiAxes_checkBox.setObjectName("displayXiAxes_checkBox")
         self.verticalLayout_7.addWidget(self.displayXiAxes_checkBox)
         self.verticalLayout_3.addWidget(self.displayOptions_groupBox)
@@ -178,19 +199,8 @@ class Ui_MeshMergerWidget(object):
         self.splitter.setObjectName("splitter")
         self.master_sceneviewerWidget = SceneviewerWidget(self.splitter)
         self.master_sceneviewerWidget.setObjectName("master_sceneviewerWidget")
-        self.masterSceneviewer_label = QtGui.QLabel(self.master_sceneviewerWidget)
-        self.masterSceneviewer_label.setGeometry(QtCore.QRect(10, 10, 101, 16))
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.masterSceneviewer_label.sizePolicy().hasHeightForWidth())
-        self.masterSceneviewer_label.setSizePolicy(sizePolicy)
-        self.masterSceneviewer_label.setObjectName("masterSceneviewer_label")
         self.slave_sceneviewerWidget = SceneviewerWidget(self.splitter)
         self.slave_sceneviewerWidget.setObjectName("slave_sceneviewerWidget")
-        self.slaveSceneviewer_label = QtGui.QLabel(self.slave_sceneviewerWidget)
-        self.slaveSceneviewer_label.setGeometry(QtCore.QRect(10, 10, 53, 16))
-        self.slaveSceneviewer_label.setObjectName("slaveSceneviewer_label")
         self.horizontalLayout_3.addWidget(self.splitter)
         self.horizontalLayout.addWidget(self.sceneviewer_frame)
 
@@ -200,6 +210,7 @@ class Ui_MeshMergerWidget(object):
     def retranslateUi(self, MeshMergerWidget):
         MeshMergerWidget.setWindowTitle(QtGui.QApplication.translate("MeshMergerWidget", "Form", None, QtGui.QApplication.UnicodeUTF8))
         self.dockWidget.setWindowTitle(QtGui.QApplication.translate("MeshMergerWidget", "Mesh Merger Controls", None, QtGui.QApplication.UnicodeUTF8))
+        self.identifier_label.setText(QtGui.QApplication.translate("MeshMergerWidget", "Identifier", None, QtGui.QApplication.UnicodeUTF8))
         self.mergeNodes_label.setText(QtGui.QApplication.translate("MeshMergerWidget", "Merge nodes master=slave (e.g. 1=55):", None, QtGui.QApplication.UnicodeUTF8))
         self.mergeNodesDelete_pushButton.setText(QtGui.QApplication.translate("MeshMergerWidget", "Delete", None, QtGui.QApplication.UnicodeUTF8))
         self.previewAlign_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Preview align", None, QtGui.QApplication.UnicodeUTF8))
@@ -214,7 +225,5 @@ class Ui_MeshMergerWidget(object):
         self.displayXiAxes_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Xi axes", None, QtGui.QApplication.UnicodeUTF8))
         self.viewAll_button.setText(QtGui.QApplication.translate("MeshMergerWidget", "View All", None, QtGui.QApplication.UnicodeUTF8))
         self.done_button.setText(QtGui.QApplication.translate("MeshMergerWidget", "Done", None, QtGui.QApplication.UnicodeUTF8))
-        self.masterSceneviewer_label.setText(QtGui.QApplication.translate("MeshMergerWidget", "<html><head/><body><p><span style=\" color:#ffffff;\">Master / Merge</span></p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
-        self.slaveSceneviewer_label.setText(QtGui.QApplication.translate("MeshMergerWidget", "<html><head/><body><p><span style=\" color:#ffffff;\">Slave</span></p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
 
 from opencmiss.zincwidgets.sceneviewerwidget import SceneviewerWidget

@@ -105,6 +105,44 @@
            <item>
             <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
+              <widget class="QFrame" name="identifier_frame">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>3</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="identifier_label">
+                  <property name="text">
+                   <string>Identifier</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="Line" name="line">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
               <widget class="QFrame" name="mergeOptions_frame">
                <property name="frameShape">
                 <enum>QFrame::StyledPanel</enum>
@@ -113,6 +151,9 @@
                 <enum>QFrame::Raised</enum>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_4">
+                <property name="topMargin">
+                 <number>3</number>
+                </property>
                 <item>
                  <widget class="QLabel" name="mergeNodes_label">
                   <property name="text">
@@ -180,6 +221,9 @@
                <layout class="QVBoxLayout" name="verticalLayout_7">
                 <item>
                  <widget class="QCheckBox" name="displayAxes_checkBox">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="text">
                    <string>Axes</string>
                   </property>
@@ -215,6 +259,9 @@
                 </item>
                 <item>
                  <widget class="QCheckBox" name="displayNodeDerivatives_checkBox">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="text">
                    <string>Node derivatives</string>
                   </property>
@@ -222,6 +269,9 @@
                 </item>
                 <item>
                  <widget class="QCheckBox" name="displayXiAxes_checkBox">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="text">
                    <string>Xi axes</string>
                   </property>
@@ -314,42 +364,8 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <widget class="SceneviewerWidget" name="master_sceneviewerWidget" native="true">
-         <widget class="QLabel" name="masterSceneviewer_label">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>101</width>
-            <height>16</height>
-           </rect>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Master / Merge&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </widget>
-        <widget class="SceneviewerWidget" name="slave_sceneviewerWidget" native="true">
-         <widget class="QLabel" name="slaveSceneviewer_label">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>53</width>
-            <height>16</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Slave&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </widget>
+        <widget class="SceneviewerWidget" name="master_sceneviewerWidget" native="true"/>
+        <widget class="SceneviewerWidget" name="slave_sceneviewerWidget" native="true"/>
        </widget>
       </item>
      </layout>

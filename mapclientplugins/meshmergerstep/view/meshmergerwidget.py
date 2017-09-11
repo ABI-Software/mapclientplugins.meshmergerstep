@@ -96,6 +96,7 @@ class MeshMergerWidget(QtGui.QWidget):
         self._doneCallback()
 
     def _refreshOptions(self):
+        self._ui.identifier_label.setText('Identifier:  ' + self._model.getIdentifier())
         self._ui.mergeNodes_plainTextEdit.setPlainText(self._model.getMergeNodesText())
         self._ui.previewAlign_checkBox.setChecked(self._model.isPreviewAlign())
         self._ui.previewFit_checkBox.setChecked(self._model.isPreviewFit())

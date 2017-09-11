@@ -3,7 +3,6 @@
 MAP Client Plugin Step
 """
 import json
-import os
 
 from PySide import QtGui
 
@@ -50,7 +49,7 @@ class MeshMergerStep(WorkflowStepMountPoint):
         Kick off the execution of the step, in this case an interactive dialog.
         User invokes the _doneExecution() method when finished, via pushbutton.
         """
-        self._model = MeshMergerModel(os.path.join(self._location, self._config['identifier']),
+        self._model = MeshMergerModel(self._location, self._config['identifier'],
             self._portData0, self._portData1)
         self._view = MeshMergerWidget(self._model)
         self._view.registerDoneExecution(self._doneExecution)

@@ -21,11 +21,13 @@ class MeshMergerModel(object):
     Framework for generating meshes of a number of types, with mesh type specific options
     '''
 
-    def __init__(self, location, masterFilename, slaveFilename):
+    def __init__(self, location, identifier, masterFilename, slaveFilename):
         '''
         Constructor
         '''
         self._location = location
+        self._identifier = identifier
+        self._filenameStem = os.path.join(self._location, self._identifier)
         self._context = Context("MeshMerger")
         self._masterRegion = self._context.createRegion()
         self._slaveRegion = self._context.createRegion()
@@ -115,7 +117,7 @@ class MeshMergerModel(object):
             if mergeNodesPair[0] == masterNodeId:
                 if mergeNodesPair[1] == slaveNodeId:
                     return False
-                mergeNodesPair[1] = slaveNodeId
+                self._mergeNodes[index] = (masterNodeId, slaveNodeId)
                 found = True
                 break
             elif mergeNodesPair[0] > masterNodeId:
@@ -158,16 +160,19 @@ class MeshMergerModel(object):
     def getSlaveScene(self):
         return self._slaveRegion.getScene()
 
+    def getIdentifier(self):
+        return self._identifier
+
     def _loadSettings(self):
         try:
-            with open(self._location + '-settings.json', 'r') as f:
+            with open(self._filenameStem + '-settings.json', 'r') as f:
                 self._settings.update(json.loads(f.read()))
             self._parseMergeNodesText(self._settings['mergeNodes'])
         except:
             pass  # no settings saved yet
 
     def _saveSettings(self):
-        with open(self._location + '-settings.json', 'w') as f:
+        with open(self._filenameStem + '-settings.json', 'w') as f:
             f.write(json.dumps(self._settings, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
     def isPreviewAlign(self):
@@ -245,14 +250,186 @@ class MeshMergerModel(object):
     def setDisplayXiAxes(self, show):
         self._setVisibility('displayXiAxes', show)
 
+    def _getMaximumNodeId(self, nodeset):
+        maximumNodeId = -1
+        nodeiterator = nodeset.createNodeiterator()
+        node = nodeiterator.next()
+        while node.isValid():
+            id = node.getIdentifier()
+            if id > maximumNodeId:
+                maximumNodeId = id
+            node = nodeiterator.next()
+        return maximumNodeId
+
+    def _offsetNodeIds(self, nodeset, idOffset):
+        idMaps = []
+        nodeiterator = nodeset.createNodeiterator()
+        node = nodeiterator.next()
+        while node.isValid():
+            id = node.getIdentifier()
+            idMaps.append((id, id + idOffset))
+            node = nodeiterator.next()
+        for idMap in idMaps:
+            node = nodeset.findNodeByIdentifier(idMap[0])
+            node.setIdentifier(idMap[1])
+
+    def _getMaximumElementId(self, mesh):
+        maximumElementId = -1
+        elementiterator = mesh.createElementiterator()
+        element = elementiterator.next()
+        while element.isValid():
+            id = element.getIdentifier()
+            if id > maximumElementId:
+                maximumElementId = id
+            element = elementiterator.next()
+        return maximumElementId
+
+    def _offsetElementIds(self, mesh, idOffset):
+        idMaps = []
+        elementiterator = mesh.createElementiterator()
+        element = elementiterator.next()
+        while element.isValid():
+            id = element.getIdentifier()
+            idMaps.append((id, id + idOffset))
+            element = elementiterator.next()
+        for idMap in idMaps:
+            element = mesh.findElementByIdentifier(idMap[0])
+            element.setIdentifier(idMap[1])
+
+    def _restartElementIds(self, mesh, firstId):
+        idMaps = []
+        nextId = firstId
+        elementiterator = mesh.createElementiterator()
+        element = elementiterator.next()
+        while element.isValid():
+            id = element.getIdentifier()
+            idMaps.append((id, nextId))
+            nextId += 1
+            element = elementiterator.next()
+        for idMap in idMaps:
+            element = mesh.findElementByIdentifier(idMap[0])
+            element.setIdentifier(idMap[1])
+
     def _mergeMesh(self):
         self._masterRegion = self._context.createRegion()
         self._masterRegion.readFile(self._masterFilename)
-        fm = self._masterRegion.getFieldmodule()
-        fm.beginChange()
-        coordinates = fm.findFieldByName('coordinates').castFiniteElement()
-        fm.defineAllFaces()
-        fm.endChange()
+        if len(self._mergeNodes) > 0:
+            # perform merge of slave into master
+            masterFm = self._masterRegion.getFieldmodule()
+            masterNodes = masterFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
+            maximumMasterNodeId = self._getMaximumNodeId(masterNodes)
+            masterCoordinates = masterFm.findFieldByName('coordinates').castFiniteElement()
+            masterCache = masterFm.createFieldcache()
+            for dimension in range(3,0,-1):
+                masterMesh = masterFm.findMeshByDimension(dimension)
+                if masterMesh.getSize() > 0:
+                    break
+            masterMeshDimension = masterMesh.getDimension()
+            # modify copy of slave region
+            slaveRegion = self._context.createRegion()
+            slaveRegion.readFile(self._slaveFilename)
+            slaveFm = slaveRegion.getFieldmodule()
+            slaveNodes = slaveFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
+            maximumSlaveNodeId = self._getMaximumNodeId(slaveNodes)
+            slaveCoordinates = slaveFm.findFieldByName('coordinates').castFiniteElement()
+            slaveCache = slaveFm.createFieldcache()
+            for dimension in range(3,0,-1):
+                slaveMesh = slaveFm.findMeshByDimension(dimension)
+                if slaveMesh.getSize() > 0:
+                    break
+            slaveMeshDimension = slaveMesh.getDimension()
+            # get mean translation from matched slave to master nodes
+            cache = slaveFm.createFieldcache()
+            count = 0
+            offset = [ 0.0, 0.0, 0.0 ]
+            # note: can't handle mix of component counts
+            componentCount = slaveCoordinates.getNumberOfComponents()
+            for mergeNodesPair in self._mergeNodes:
+                masterCache.setNode(masterNodes.findNodeByIdentifier(mergeNodesPair[0]))
+                result, masterX = masterCoordinates.evaluateReal(masterCache, 3)
+                #print('master ',mergeNodesPair[0],'result',result,masterX)
+                slaveCache.setNode(slaveNodes.findNodeByIdentifier(mergeNodesPair[1]))
+                result, slaveX = slaveCoordinates.evaluateReal(slaveCache, 3)
+                #print(' slave ',mergeNodesPair[1],'result',result,slaveX)
+                for c in range(componentCount):
+                    offset[c] += (masterX[c] - slaveX[c])
+                count += 1
+            # take the mean
+            for c in range(componentCount):
+                offset[c] /= count
+            print('offset =', offset)
+            slaveFm.beginChange()
+            # offset slave node identifier so not clashing with current and future master/merged nodes
+            idOffset = maximumMasterNodeId + maximumSlaveNodeId
+            self._offsetNodeIds(slaveNodes, idOffset)
+            # give merged nodes same id as master, offset new node ids and their coordinates
+            slaveCache = slaveFm.createFieldcache()
+            slaveNodeIdMaps = []
+            nextNewId = maximumMasterNodeId + 1
+            nodeiterator = slaveNodes.createNodeiterator()
+            node = nodeiterator.next()
+            while node.isValid():
+                oldId = node.getIdentifier()
+                newId = -1
+                for mergeNodesPair in self._mergeNodes:
+                    if oldId == (mergeNodesPair[1] + idOffset):
+                        newId = mergeNodesPair[0]
+                        break;
+                if newId < 0:
+                    slaveCache.setNode(node)
+                    result1, x = slaveCoordinates.evaluateReal(slaveCache, 3)
+                    for c in range(componentCount):
+                        x[c] += offset[c]
+                    result2 = slaveCoordinates.assignReal(slaveCache, x)
+                    #print(oldId,newId,result1,result2,x)
+                    newId = nextNewId
+                    nextNewId += 1
+                slaveNodeIdMaps.append((oldId, newId))
+                node = nodeiterator.next()
+            for idMap in slaveNodeIdMaps:
+                node = slaveNodes.findNodeByIdentifier(idMap[0])
+                node.setIdentifier(idMap[1])
+            # restart element numbering to be above master
+            maximumMasterElementId = self._getMaximumElementId(masterMesh)
+            self._offsetElementIds(slaveMesh, maximumMasterElementId + slaveMesh.getSize())
+            self._restartElementIds(slaveMesh, maximumMasterElementId + 1)
+            # write elements to memory buffer
+            sire = slaveRegion.createStreaminformationRegion()
+            srme = sire.createStreamresourceMemory()
+            if slaveMeshDimension == 3:
+                domainTypes = Field.DOMAIN_TYPE_MESH3D
+            elif slaveMeshDimension == 2:
+                domainTypes = Field.DOMAIN_TYPE_MESH2D
+            else:
+                domainTypes = Field.DOMAIN_TYPE_MESH1D
+            sire.setResourceDomainTypes(srme, domainTypes)
+            slaveRegion.write(sire)
+            result, elementBuffer = srme.getBuffer()
+            # destroy all elements and merged nodes then write nodes to memory buffer
+            slaveMesh.destroyAllElements()
+            for mergeNodesPair in self._mergeNodes:
+                # using master numbering
+                node = slaveNodes.findNodeByIdentifier(mergeNodesPair[0])
+                slaveNodes.destroyNode(node)
+            sirn = slaveRegion.createStreaminformationRegion()
+            srmn = sirn.createStreamresourceMemory()
+            sirn.setResourceDomainTypes(srmn, Field.DOMAIN_TYPE_NODES)
+            slaveRegion.write(sirn)
+            result, nodeBuffer = srmn.getBuffer()
+            slaveFm.endChange()
+            masterFm.beginChange()
+            sir1 = self._masterRegion.createStreaminformationRegion()
+            srm1 = sir1.createStreamresourceMemoryBuffer(nodeBuffer)
+            result = self._masterRegion.read(sir1)
+            sir2 = self._masterRegion.createStreaminformationRegion()
+            srm2 = sir2.createStreamresourceMemoryBuffer(elementBuffer)
+            result = self._masterRegion.read(sir2)
+            # workaround for defineAllFaces not working with newly merged elements
+            faceMesh = masterFm.findMeshByDimension(masterMeshDimension - 1)
+            if faceMesh.isValid():
+                faceMesh.destroyAllElements()
+            masterFm.defineAllFaces()
+            masterFm.endChange()
         self._createGraphics(self._masterRegion)
         if self._sceneChangeCallback is not None:
             self._sceneChangeCallback()
@@ -322,6 +499,7 @@ class MeshMergerModel(object):
             nodeDerivatives.setCoordinateField(coordinates)
             pointattr = nodeDerivatives.getGraphicspointattributes()
             pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_ARROW_SOLID)
+            #pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_LINE)
             pointattr.setOrientationScaleField(nodeDerivativeFields[i])
             pointattr.setBaseSize([0.0, width, width])
             pointattr.setScaleFactors([1.0, 0.0, 0.0])
@@ -334,6 +512,7 @@ class MeshMergerModel(object):
         xiAxes.setCoordinateField(coordinates)
         pointattr = xiAxes.getGraphicspointattributes()
         pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_AXES_123)
+        #pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_LINE)
         pointattr.setOrientationScaleField(elementDerivativesField)
         if meshDimension == 1:
             pointattr.setBaseSize([0.0, 2*width, 2*width])
@@ -351,7 +530,7 @@ class MeshMergerModel(object):
         scene.endChange()
 
     def getOutputModelFilename(self):
-        return self._location + '.ex2'
+        return self._filenameStem + '.ex2'
 
     def _writeModel(self):
         self._masterRegion.writeFile(self.getOutputModelFilename())

@@ -499,7 +499,6 @@ class MeshMergerModel(object):
             nodeDerivatives.setCoordinateField(coordinates)
             pointattr = nodeDerivatives.getGraphicspointattributes()
             pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_ARROW_SOLID)
-            #pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_LINE)
             pointattr.setOrientationScaleField(nodeDerivativeFields[i])
             pointattr.setBaseSize([0.0, width, width])
             pointattr.setScaleFactors([1.0, 0.0, 0.0])
@@ -512,7 +511,6 @@ class MeshMergerModel(object):
         xiAxes.setCoordinateField(coordinates)
         pointattr = xiAxes.getGraphicspointattributes()
         pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_AXES_123)
-        #pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_LINE)
         pointattr.setOrientationScaleField(elementDerivativesField)
         if meshDimension == 1:
             pointattr.setBaseSize([0.0, 2*width, 2*width])

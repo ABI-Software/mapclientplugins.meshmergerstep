@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapclientplugins\meshmergerstep\qt\meshmergerwidget.ui'
 #
-# Created: Mon Sep 11 15:53:15 2017
+# Created: Mon Sep 11 16:29:39 2017
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -128,7 +128,7 @@ class Ui_MeshMergerWidget(object):
         self.verticalLayout_7 = QtGui.QVBoxLayout(self.displayOptions_groupBox)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self.displayAxes_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
-        self.displayAxes_checkBox.setEnabled(False)
+        self.displayAxes_checkBox.setEnabled(True)
         self.displayAxes_checkBox.setObjectName("displayAxes_checkBox")
         self.verticalLayout_7.addWidget(self.displayAxes_checkBox)
         self.displayLines_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
@@ -144,11 +144,11 @@ class Ui_MeshMergerWidget(object):
         self.displayNodeNumbers_checkBox.setObjectName("displayNodeNumbers_checkBox")
         self.verticalLayout_7.addWidget(self.displayNodeNumbers_checkBox)
         self.displayNodeDerivatives_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
-        self.displayNodeDerivatives_checkBox.setEnabled(False)
+        self.displayNodeDerivatives_checkBox.setEnabled(True)
         self.displayNodeDerivatives_checkBox.setObjectName("displayNodeDerivatives_checkBox")
         self.verticalLayout_7.addWidget(self.displayNodeDerivatives_checkBox)
         self.displayXiAxes_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
-        self.displayXiAxes_checkBox.setEnabled(False)
+        self.displayXiAxes_checkBox.setEnabled(True)
         self.displayXiAxes_checkBox.setObjectName("displayXiAxes_checkBox")
         self.verticalLayout_7.addWidget(self.displayXiAxes_checkBox)
         self.verticalLayout_3.addWidget(self.displayOptions_groupBox)
@@ -199,7 +199,7 @@ class Ui_MeshMergerWidget(object):
         self.splitter.setObjectName("splitter")
         self.master_sceneviewerWidget = SceneviewerWidget(self.splitter)
         self.master_sceneviewerWidget.setObjectName("master_sceneviewerWidget")
-        self.slave_sceneviewerWidget = SceneviewerWidget(self.splitter)
+        self.slave_sceneviewerWidget = SceneviewerWidget(self.splitter, self.master_sceneviewerWidget)
         self.slave_sceneviewerWidget.setObjectName("slave_sceneviewerWidget")
         self.horizontalLayout_3.addWidget(self.splitter)
         self.horizontalLayout.addWidget(self.sceneviewer_frame)

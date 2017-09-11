@@ -222,7 +222,7 @@
                 <item>
                  <widget class="QCheckBox" name="displayAxes_checkBox">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <property name="text">
                    <string>Axes</string>
@@ -260,7 +260,7 @@
                 <item>
                  <widget class="QCheckBox" name="displayNodeDerivatives_checkBox">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <property name="text">
                    <string>Node derivatives</string>
@@ -270,7 +270,7 @@
                 <item>
                  <widget class="QCheckBox" name="displayXiAxes_checkBox">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <property name="text">
                    <string>Xi axes</string>

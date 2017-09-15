@@ -402,6 +402,10 @@ class MeshMergerModel(object):
                 domainTypes = Field.DOMAIN_TYPE_MESH2D
             else:
                 domainTypes = Field.DOMAIN_TYPE_MESH1D
+            if slaveMeshDimension > 1:
+                # destroy all slave faces so not merged into master
+                slaveFaceMesh = slaveFm.findMeshByDimension(slaveMeshDimension - 1)
+                slaveFaceMesh.destroyAllElements()
             sire.setResourceDomainTypes(srme, domainTypes)
             slaveRegion.write(sire)
             result, elementBuffer = srme.getBuffer()
@@ -424,10 +428,7 @@ class MeshMergerModel(object):
             sir2 = self._masterRegion.createStreaminformationRegion()
             srm2 = sir2.createStreamresourceMemoryBuffer(elementBuffer)
             result = self._masterRegion.read(sir2)
-            # workaround for defineAllFaces not working with newly merged elements
             faceMesh = masterFm.findMeshByDimension(masterMeshDimension - 1)
-            if faceMesh.isValid():
-                faceMesh.destroyAllElements()
             masterFm.defineAllFaces()
             masterFm.endChange()
         self._createGraphics(self._masterRegion)

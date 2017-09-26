@@ -8,11 +8,13 @@ import os, sys
 import json
 
 from opencmiss.zinc.context import Context
-from opencmiss.zinc.status import OK as ZINC_OK
+from opencmiss.zinc.result import RESULT_OK
 from opencmiss.zinc.field import Field
 from opencmiss.zinc.glyph import Glyph
 from opencmiss.zinc.material import Material
 from opencmiss.zinc.node import Node
+from opencmiss.zinc.optimisation import Optimisation
+from mapclientplugins.meshmergerstep.utils import zinc as zincutils
 
 STRING_FLOAT_FORMAT = '{:.8g}'
 
@@ -250,66 +252,6 @@ class MeshMergerModel(object):
     def setDisplayXiAxes(self, show):
         self._setVisibility('displayXiAxes', show)
 
-    def _getMaximumNodeId(self, nodeset):
-        maximumNodeId = -1
-        nodeiterator = nodeset.createNodeiterator()
-        node = nodeiterator.next()
-        while node.isValid():
-            id = node.getIdentifier()
-            if id > maximumNodeId:
-                maximumNodeId = id
-            node = nodeiterator.next()
-        return maximumNodeId
-
-    def _offsetNodeIds(self, nodeset, idOffset):
-        idMaps = []
-        nodeiterator = nodeset.createNodeiterator()
-        node = nodeiterator.next()
-        while node.isValid():
-            id = node.getIdentifier()
-            idMaps.append((id, id + idOffset))
-            node = nodeiterator.next()
-        for idMap in idMaps:
-            node = nodeset.findNodeByIdentifier(idMap[0])
-            node.setIdentifier(idMap[1])
-
-    def _getMaximumElementId(self, mesh):
-        maximumElementId = -1
-        elementiterator = mesh.createElementiterator()
-        element = elementiterator.next()
-        while element.isValid():
-            id = element.getIdentifier()
-            if id > maximumElementId:
-                maximumElementId = id
-            element = elementiterator.next()
-        return maximumElementId
-
-    def _offsetElementIds(self, mesh, idOffset):
-        idMaps = []
-        elementiterator = mesh.createElementiterator()
-        element = elementiterator.next()
-        while element.isValid():
-            id = element.getIdentifier()
-            idMaps.append((id, id + idOffset))
-            element = elementiterator.next()
-        for idMap in idMaps:
-            element = mesh.findElementByIdentifier(idMap[0])
-            element.setIdentifier(idMap[1])
-
-    def _restartElementIds(self, mesh, firstId):
-        idMaps = []
-        nextId = firstId
-        elementiterator = mesh.createElementiterator()
-        element = elementiterator.next()
-        while element.isValid():
-            id = element.getIdentifier()
-            idMaps.append((id, nextId))
-            nextId += 1
-            element = elementiterator.next()
-        for idMap in idMaps:
-            element = mesh.findElementByIdentifier(idMap[0])
-            element.setIdentifier(idMap[1])
-
     def _mergeMesh(self):
         self._masterRegion = self._context.createRegion()
         self._masterRegion.readFile(self._masterFilename)
@@ -317,7 +259,7 @@ class MeshMergerModel(object):
             # perform merge of slave into master
             masterFm = self._masterRegion.getFieldmodule()
             masterNodes = masterFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
-            maximumMasterNodeId = self._getMaximumNodeId(masterNodes)
+            maximumMasterNodeId = zincutils.getMaximumNodeId(masterNodes)
             masterCoordinates = masterFm.findFieldByName('coordinates').castFiniteElement()
             masterCache = masterFm.createFieldcache()
             for dimension in range(3,0,-1):
@@ -330,8 +272,10 @@ class MeshMergerModel(object):
             slaveRegion.readFile(self._slaveFilename)
             slaveFm = slaveRegion.getFieldmodule()
             slaveNodes = slaveFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
-            maximumSlaveNodeId = self._getMaximumNodeId(slaveNodes)
+            maximumSlaveNodeId = zincutils.getMaximumNodeId(slaveNodes)
             slaveCoordinates = slaveFm.findFieldByName('coordinates').castFiniteElement()
+            # note: can't handle mix of component counts
+            componentCount = slaveCoordinates.getNumberOfComponents()
             slaveCache = slaveFm.createFieldcache()
             for dimension in range(3,0,-1):
                 slaveMesh = slaveFm.findMeshByDimension(dimension)
@@ -341,28 +285,47 @@ class MeshMergerModel(object):
             # get mean translation from matched slave to master nodes
             cache = slaveFm.createFieldcache()
             count = 0
-            offset = [ 0.0, 0.0, 0.0 ]
-            # note: can't handle mix of component counts
-            componentCount = slaveCoordinates.getNumberOfComponents()
+            # create matched group for optimising orientation
+            slaveFm.beginChange()
+            slaveMatchedNodesField = slaveFm.createFieldNodeGroup(slaveNodes)
+            slaveMatchedNodesGroup = slaveMatchedNodesField.getNodesetGroup()
+            slaveMasterCoordinates = slaveFm.createFieldFiniteElement(componentCount)
+            nodetemplate = slaveNodes.createNodetemplate()
+            nodetemplate.defineField(slaveMasterCoordinates)
+            masterMeanX = [0.0]*componentCount
+            slaveMeanX = [0.0]*componentCount
             for mergeNodesPair in self._mergeNodes:
-                masterCache.setNode(masterNodes.findNodeByIdentifier(mergeNodesPair[0]))
-                result, masterX = masterCoordinates.evaluateReal(masterCache, 3)
+                masterNode = masterNodes.findNodeByIdentifier(mergeNodesPair[0])
+                masterCache.setNode(masterNode)
+                result, masterX = masterCoordinates.evaluateReal(masterCache, componentCount)
                 #print('master ',mergeNodesPair[0],'result',result,masterX)
-                slaveCache.setNode(slaveNodes.findNodeByIdentifier(mergeNodesPair[1]))
-                result, slaveX = slaveCoordinates.evaluateReal(slaveCache, 3)
+                slaveNode = slaveNodes.findNodeByIdentifier(mergeNodesPair[1])
+                slaveNode.merge(nodetemplate)
+                slaveMatchedNodesGroup.addNode(slaveNode)
+                slaveCache.setNode(slaveNode)
+                result, slaveX = slaveCoordinates.evaluateReal(slaveCache, componentCount)
                 #print(' slave ',mergeNodesPair[1],'result',result,slaveX)
+                result = slaveMasterCoordinates.assignReal(slaveCache, masterX)
                 for c in range(componentCount):
-                    offset[c] += (masterX[c] - slaveX[c])
+                    masterMeanX[c] += masterX[c]
+                    slaveMeanX[c] += slaveX[c]
                 count += 1
             # take the mean
             for c in range(componentCount):
-                offset[c] /= count
-            print('offset =', offset)
-            slaveFm.beginChange()
+                masterMeanX[c] /= count
+                slaveMeanX[c] /= count
+
+            masterMinusMeanX = [-x for x in masterMeanX]
+            slaveMinusMeanX = [-x for x in slaveMeanX]
+            # translate coordinates so means on matched nodes are at zero
+            zincutils.translateNodeCoordinates(slaveNodes, slaveCoordinates, slaveMinusMeanX)
+            zincutils.translateNodeCoordinates(slaveMatchedNodesGroup, slaveMasterCoordinates, masterMinusMeanX)
+
             # offset slave node identifier so not clashing with current and future master/merged nodes
             idOffset = maximumMasterNodeId + maximumSlaveNodeId
-            self._offsetNodeIds(slaveNodes, idOffset)
-            # give merged nodes same id as master, offset new node ids and their coordinates
+            zincutils.offsetNodeIds(slaveNodes, idOffset)
+
+            # give merged nodes same id as master, offset remaining slave node ids to be above master node ids
             slaveCache = slaveFm.createFieldcache()
             slaveNodeIdMaps = []
             nextNewId = maximumMasterNodeId + 1
@@ -376,12 +339,6 @@ class MeshMergerModel(object):
                         newId = mergeNodesPair[0]
                         break;
                 if newId < 0:
-                    slaveCache.setNode(node)
-                    result1, x = slaveCoordinates.evaluateReal(slaveCache, 3)
-                    for c in range(componentCount):
-                        x[c] += offset[c]
-                    result2 = slaveCoordinates.assignReal(slaveCache, x)
-                    #print(oldId,newId,result1,result2,x)
                     newId = nextNewId
                     nextNewId += 1
                 slaveNodeIdMaps.append((oldId, newId))
@@ -389,10 +346,54 @@ class MeshMergerModel(object):
             for idMap in slaveNodeIdMaps:
                 node = slaveNodes.findNodeByIdentifier(idMap[0])
                 node.setIdentifier(idMap[1])
+
+            # non-linear optimisation to rotate slave nodes onto master coordinates
+            azimuth = slaveFm.createFieldConstant([0.0])
+            elevation = slaveFm.createFieldConstant([0.0])
+            roll = slaveFm.createFieldConstant([0.0])
+            rotationMatrix = zincutils.createRotationMatrixField(azimuth, elevation, roll)
+            rotatedSlaveCoordinates = slaveFm.createFieldMatrixMultiply(3, rotationMatrix, slaveCoordinates)
+            print('rotatedSlaveCoordinates.isValid() =',rotatedSlaveCoordinates.isValid())
+            delta = slaveFm.createFieldSubtract(rotatedSlaveCoordinates, slaveMasterCoordinates)
+            error = slaveFm.createFieldMagnitude(delta)
+            objective = slaveFm.createFieldNodesetSum(error, slaveMatchedNodesGroup)
+            print('objective.isValid() =', objective.isValid(), '#nodes=', slaveMatchedNodesGroup.getSize())
+            #result, matrixBefore = rotationMatrix.evaluateReal(slaveCache, 9)
+            #print(result, 'matrixBefore', matrixBefore)
+            result, objectiveBefore = objective.evaluateReal(slaveCache, 1)
+            print(result, 'objectiveBefore', objectiveBefore)
+            eulerAngles = slaveFm.createFieldConcatenate([azimuth, elevation, roll])
+            result, eulerAnglesBefore = eulerAngles.evaluateReal(slaveCache, 3)
+            print(result, 'eulerAnglesBefore', eulerAnglesBefore)
+
+            optimisation = slaveFm.createOptimisation()
+            optimisation.setMethod(Optimisation.METHOD_QUASI_NEWTON)
+            optimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_ITERATIONS, 100)
+            optimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS, 1000)
+            optimisation.setAttributeReal(Optimisation.ATTRIBUTE_FUNCTION_TOLERANCE, 1.0e-8)  # 1.0e-8
+            optimisation.addObjectiveField(objective)
+            optimisation.addIndependentField(azimuth)
+            optimisation.addIndependentField(elevation)
+            optimisation.addIndependentField(roll)
+
+            result = optimisation.optimise()
+            #print('optimisation result =', result)
+            #report = optimisation.getSolutionReport()
+            #print(report)
+
+            result, matrixAfter = rotationMatrix.evaluateReal(slaveCache, 9)
+            #print(result, 'matrixAfter', matrixAfter)
+            result, objectiveAfter = objective.evaluateReal(slaveCache, 1)
+            print(result, 'objectiveAfter', objectiveAfter)
+            result, eulerAnglesAfter = eulerAngles.evaluateReal(slaveCache, 3)
+            print(result, 'eulerAnglesAfter', eulerAnglesAfter)
+
+            zincutils.transformNodeCoordinates(slaveNodes, slaveCoordinates, matrixAfter, masterMeanX)
+
             # restart element numbering to be above master
-            maximumMasterElementId = self._getMaximumElementId(masterMesh)
-            self._offsetElementIds(slaveMesh, maximumMasterElementId + slaveMesh.getSize())
-            self._restartElementIds(slaveMesh, maximumMasterElementId + 1)
+            maximumMasterElementId = zincutils.getMaximumElementId(masterMesh)
+            zincutils.offsetElementIds(slaveMesh, maximumMasterElementId + slaveMesh.getSize())
+            zincutils.renumberElementIds(slaveMesh, maximumMasterElementId + 1)
             # write elements to memory buffer
             sire = slaveRegion.createStreaminformationRegion()
             srme = sire.createStreamresourceMemory()

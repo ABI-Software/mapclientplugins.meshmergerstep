@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapclientplugins\meshmergerstep\qt\meshmergerwidget.ui'
 #
-# Created: Mon Sep 11 16:29:39 2017
+# Created: Thu Oct  5 17:03:45 2017
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MeshMergerWidget(object):
     def setupUi(self, MeshMergerWidget):
         MeshMergerWidget.setObjectName("MeshMergerWidget")
-        MeshMergerWidget.resize(809, 567)
+        MeshMergerWidget.resize(809, 649)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -54,7 +54,7 @@ class Ui_MeshMergerWidget(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents_2 = QtGui.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 351, 503))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 364, 564))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -134,9 +134,26 @@ class Ui_MeshMergerWidget(object):
         self.displayLines_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
         self.displayLines_checkBox.setObjectName("displayLines_checkBox")
         self.verticalLayout_7.addWidget(self.displayLines_checkBox)
-        self.displaySurfaces_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
+        self.displaySurfaces_frame = QtGui.QFrame(self.displayOptions_groupBox)
+        self.displaySurfaces_frame.setFrameShape(QtGui.QFrame.StyledPanel)
+        self.displaySurfaces_frame.setFrameShadow(QtGui.QFrame.Raised)
+        self.displaySurfaces_frame.setObjectName("displaySurfaces_frame")
+        self.horizontalLayout_5 = QtGui.QHBoxLayout(self.displaySurfaces_frame)
+        self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.displaySurfaces_checkBox = QtGui.QCheckBox(self.displaySurfaces_frame)
         self.displaySurfaces_checkBox.setObjectName("displaySurfaces_checkBox")
-        self.verticalLayout_7.addWidget(self.displaySurfaces_checkBox)
+        self.horizontalLayout_5.addWidget(self.displaySurfaces_checkBox)
+        self.displaySurfacesExterior_checkBox = QtGui.QCheckBox(self.displaySurfaces_frame)
+        self.displaySurfacesExterior_checkBox.setObjectName("displaySurfacesExterior_checkBox")
+        self.horizontalLayout_5.addWidget(self.displaySurfacesExterior_checkBox)
+        self.displaySurfacesTranslucent_checkBox = QtGui.QCheckBox(self.displaySurfaces_frame)
+        self.displaySurfacesTranslucent_checkBox.setObjectName("displaySurfacesTranslucent_checkBox")
+        self.horizontalLayout_5.addWidget(self.displaySurfacesTranslucent_checkBox)
+        self.displaySurfacesWireframe_checkBox = QtGui.QCheckBox(self.displaySurfaces_frame)
+        self.displaySurfacesWireframe_checkBox.setObjectName("displaySurfacesWireframe_checkBox")
+        self.horizontalLayout_5.addWidget(self.displaySurfacesWireframe_checkBox)
+        self.verticalLayout_7.addWidget(self.displaySurfaces_frame)
         self.displayElementNumbers_checkBox = QtGui.QCheckBox(self.displayOptions_groupBox)
         self.displayElementNumbers_checkBox.setObjectName("displayElementNumbers_checkBox")
         self.verticalLayout_7.addWidget(self.displayElementNumbers_checkBox)
@@ -219,6 +236,9 @@ class Ui_MeshMergerWidget(object):
         self.displayAxes_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Axes", None, QtGui.QApplication.UnicodeUTF8))
         self.displayLines_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Lines", None, QtGui.QApplication.UnicodeUTF8))
         self.displaySurfaces_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Surfaces", None, QtGui.QApplication.UnicodeUTF8))
+        self.displaySurfacesExterior_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Exterior", None, QtGui.QApplication.UnicodeUTF8))
+        self.displaySurfacesTranslucent_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Transluc.", None, QtGui.QApplication.UnicodeUTF8))
+        self.displaySurfacesWireframe_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Wireframe", None, QtGui.QApplication.UnicodeUTF8))
         self.displayElementNumbers_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Element numbers", None, QtGui.QApplication.UnicodeUTF8))
         self.displayNodeNumbers_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Node numbers", None, QtGui.QApplication.UnicodeUTF8))
         self.displayNodeDerivatives_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Node derivatives", None, QtGui.QApplication.UnicodeUTF8))

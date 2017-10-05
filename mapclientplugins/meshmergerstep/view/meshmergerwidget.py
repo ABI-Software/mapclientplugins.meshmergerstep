@@ -5,6 +5,7 @@ Created on Sep 10, 2017
 '''
 from PySide import QtGui, QtCore
 from functools import partial
+from opencmiss.zinc.field import Field
 from opencmiss.zinc.sceneviewer import Sceneviewer
 
 from mapclientplugins.meshmergerstep.view.ui_meshmergerwidget import Ui_MeshMergerWidget
@@ -22,7 +23,10 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui = Ui_MeshMergerWidget()
         self._ui.setupUi(self)
         self._model = model
-        self._ui.master_sceneviewerWidget.setContext(model.getContext())
+        context = model.getContext()
+        self._ui.master_sceneviewerWidget.setContext(context)
+        scenefiltermodule = context.getScenefiltermodule()
+        self._scenefilterNodes = scenefiltermodule.createScenefilterFieldDomainType(Field.DOMAIN_TYPE_NODES)
         self._ui.master_sceneviewerWidget.graphicsInitialized.connect(self._graphicsInitializedMaster)
         self._ui.slave_sceneviewerWidget.setContext(model.getContext())
         self._ui.slave_sceneviewerWidget.graphicsInitialized.connect(self._graphicsInitializedSlave)
@@ -39,8 +43,9 @@ class MeshMergerWidget(QtGui.QWidget):
         sceneviewer = self._ui.master_sceneviewerWidget.getSceneviewer()
         if sceneviewer is not None:
             scene = self._model.getMasterScene()
-            sceneviewer.setScene(scene)
-            #self._ui.sceneviewer_widget.setSelectModeAll()
+            self._ui.master_sceneviewerWidget.setScene(scene)
+            self._ui.master_sceneviewerWidget.setSelectionfilter(self._scenefilterNodes)
+            self._ui.master_sceneviewerWidget.setSelectModeNode()
             sceneviewer.setLookatParametersNonSkew([2.0, -2.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0])
             sceneviewer.setTransparencyMode(sceneviewer.TRANSPARENCY_MODE_SLOW)
             self._viewAll()
@@ -53,8 +58,9 @@ class MeshMergerWidget(QtGui.QWidget):
         sceneviewer = self._ui.slave_sceneviewerWidget.getSceneviewer()
         if sceneviewer is not None:
             scene = self._model.getSlaveScene()
-            sceneviewer.setScene(scene)
-            #self._ui.sceneviewer_widget.setSelectModeAll()
+            self._ui.slave_sceneviewerWidget.setScene(scene)
+            self._ui.slave_sceneviewerWidget.setSelectionfilter(self._scenefilterNodes)
+            self._ui.slave_sceneviewerWidget.setSelectModeNode()
             sceneviewer.setLookatParametersNonSkew([2.0, -2.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0])
             sceneviewer.setTransparencyMode(sceneviewer.TRANSPARENCY_MODE_SLOW)
             self._viewAll()
@@ -82,6 +88,9 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui.displayNodeDerivatives_checkBox.clicked.connect(self._displayNodeDerivativesClicked)
         self._ui.displayNodeNumbers_checkBox.clicked.connect(self._displayNodeNumbersClicked)
         self._ui.displaySurfaces_checkBox.clicked.connect(self._displaySurfacesClicked)
+        self._ui.displaySurfacesExterior_checkBox.clicked.connect(self._displaySurfacesExteriorClicked)
+        self._ui.displaySurfacesTranslucent_checkBox.clicked.connect(self._displaySurfacesTranslucentClicked)
+        self._ui.displaySurfacesWireframe_checkBox.clicked.connect(self._displaySurfacesWireframeClicked)
         self._ui.displayXiAxes_checkBox.clicked.connect(self._displayXiAxesClicked)
 
     def getModel(self):
@@ -106,6 +115,9 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui.displayNodeDerivatives_checkBox.setChecked(self._model.isDisplayNodeDerivatives())
         self._ui.displayNodeNumbers_checkBox.setChecked(self._model.isDisplayNodeNumbers())
         self._ui.displaySurfaces_checkBox.setChecked(self._model.isDisplaySurfaces())
+        self._ui.displaySurfacesExterior_checkBox.setChecked(self._model.isDisplaySurfacesExterior())
+        self._ui.displaySurfacesTranslucent_checkBox.setChecked(self._model.isDisplaySurfacesTranslucent())
+        self._ui.displaySurfacesWireframe_checkBox.setChecked(self._model.isDisplaySurfacesWireframe())
         self._ui.displayXiAxes_checkBox.setChecked(self._model.isDisplayXiAxes())
 
     def _mergeNodesEntryChanged(self):
@@ -170,6 +182,15 @@ class MeshMergerWidget(QtGui.QWidget):
 
     def _displaySurfacesClicked(self):
         self._model.setDisplaySurfaces(self._ui.displaySurfaces_checkBox.isChecked())
+
+    def _displaySurfacesExteriorClicked(self):
+        self._model.setDisplaySurfacesExterior(self._ui.displaySurfacesExterior_checkBox.isChecked())
+
+    def _displaySurfacesTranslucentClicked(self):
+        self._model.setDisplaySurfacesTranslucent(self._ui.displaySurfacesTranslucent_checkBox.isChecked())
+
+    def _displaySurfacesWireframeClicked(self):
+        self._model.setDisplaySurfacesWireframe(self._ui.displaySurfacesWireframe_checkBox.isChecked())
 
     def _displayXiAxesClicked(self):
         self._model.setDisplayXiAxes(self._ui.displayXiAxes_checkBox.isChecked())

@@ -11,6 +11,7 @@ from opencmiss.zinc.context import Context
 from opencmiss.zinc.result import RESULT_OK
 from opencmiss.zinc.field import Field
 from opencmiss.zinc.glyph import Glyph
+from opencmiss.zinc.graphics import Graphics
 from opencmiss.zinc.material import Material
 from opencmiss.zinc.node import Node
 from opencmiss.zinc.optimisation import Optimisation
@@ -41,6 +42,14 @@ class MeshMergerModel(object):
         # set up standard materials and glyphs so we can use them elsewhere
         self._materialmodule = self._context.getMaterialmodule()
         self._materialmodule.defineStandardMaterials()
+        solid_blue = self._materialmodule.createMaterial()
+        solid_blue.setName('solid_blue')
+        solid_blue.setManaged(True)
+        solid_blue.setAttributeReal3(Material.ATTRIBUTE_AMBIENT, [ 0.0, 0.2, 0.6 ])
+        solid_blue.setAttributeReal3(Material.ATTRIBUTE_DIFFUSE, [ 0.0, 0.7, 1.0 ])
+        solid_blue.setAttributeReal3(Material.ATTRIBUTE_EMISSION, [ 0.0, 0.0, 0.0 ])
+        solid_blue.setAttributeReal3(Material.ATTRIBUTE_SPECULAR, [ 0.1, 0.1, 0.1 ])
+        solid_blue.setAttributeReal(Material.ATTRIBUTE_SHININESS , 0.2)
         trans_blue = self._materialmodule.createMaterial()
         trans_blue.setName('trans_blue')
         trans_blue.setManaged(True)
@@ -63,6 +72,9 @@ class MeshMergerModel(object):
             'displayNodeDerivatives' : False,
             'displayNodeNumbers' : True,
             'displaySurfaces' : True,
+            'displaySurfacesExterior' : True,
+            'displaySurfacesTranslucent' : True,
+            'displaySurfacesWireframe' : False,
             'displayXiAxes' : False
         }
         self._loadSettings()
@@ -246,11 +258,52 @@ class MeshMergerModel(object):
     def setDisplaySurfaces(self, show):
         self._setVisibility('displaySurfaces', show)
 
+    def isDisplaySurfacesExterior(self):
+        return self._settings['displaySurfacesExterior']
+
+    def setDisplaySurfacesExterior(self, isExterior):
+        self._settings['displaySurfacesExterior'] = isExterior
+        for region in (self._masterRegion, self._slaveRegion):
+            surfaces = region.getScene().findGraphicsByName('displaySurfaces')
+            surfaces.setExterior(self.isDisplaySurfacesExterior() if (self.getMeshDimension(region) == 3) else False)
+
+    def isDisplaySurfacesTranslucent(self):
+        return self._settings['displaySurfacesTranslucent']
+
+    def setDisplaySurfacesTranslucent(self, isTranslucent):
+        self._settings['displaySurfacesTranslucent'] = isTranslucent
+        for region in (self._masterRegion, self._slaveRegion):
+            surfaces = region.getScene().findGraphicsByName('displaySurfaces')
+            surfacesMaterial = self._materialmodule.findMaterialByName('trans_blue' if isTranslucent else 'solid_blue')
+            surfaces.setMaterial(surfacesMaterial)
+
+    def isDisplaySurfacesWireframe(self):
+        return self._settings['displaySurfacesWireframe']
+
+    def setDisplaySurfacesWireframe(self, isWireframe):
+        self._settings['displaySurfacesWireframe'] = isWireframe
+        for region in (self._masterRegion, self._slaveRegion):
+            surfaces = region.getScene().findGraphicsByName('displaySurfaces')
+            surfaces.setRenderPolygonMode(Graphics.RENDER_POLYGON_MODE_WIREFRAME if isWireframe else Graphics.RENDER_POLYGON_MODE_SHADED)
+
     def isDisplayXiAxes(self):
         return self._getVisibility('displayXiAxes')
 
     def setDisplayXiAxes(self, show):
         self._setVisibility('displayXiAxes', show)
+
+    def _getMesh(self, region):
+        fm = region.getFieldmodule()
+        for dimension in range(3,0,-1):
+            mesh = fm.findMeshByDimension(dimension)
+            if mesh.getSize() > 0:
+                break
+        if mesh.getSize() == 0:
+            mesh = fm.findMeshByDimension(3)
+        return mesh
+
+    def getMeshDimension(self, region):
+        return self._getMesh(region).getDimension()
 
     def _mergeMesh(self):
         self._masterRegion = self._context.createRegion()
@@ -262,10 +315,7 @@ class MeshMergerModel(object):
             maximumMasterNodeId = zincutils.getMaximumNodeId(masterNodes)
             masterCoordinates = masterFm.findFieldByName('coordinates').castFiniteElement()
             masterCache = masterFm.createFieldcache()
-            for dimension in range(3,0,-1):
-                masterMesh = masterFm.findMeshByDimension(dimension)
-                if masterMesh.getSize() > 0:
-                    break
+            masterMesh = self._getMesh(self._masterRegion)
             masterMeshDimension = masterMesh.getDimension()
             # modify copy of slave region
             slaveRegion = self._context.createRegion()
@@ -277,10 +327,7 @@ class MeshMergerModel(object):
             # note: can't handle mix of component counts
             componentCount = slaveCoordinates.getNumberOfComponents()
             slaveCache = slaveFm.createFieldcache()
-            for dimension in range(3,0,-1):
-                slaveMesh = slaveFm.findMeshByDimension(dimension)
-                if slaveMesh.getSize() > 0:
-                    break
+            slaveMesh = self._getMesh(slaveRegion)
             slaveMeshDimension = slaveMesh.getDimension()
             # get mean translation from matched slave to master nodes
             cache = slaveFm.createFieldcache()
@@ -353,11 +400,11 @@ class MeshMergerModel(object):
             roll = slaveFm.createFieldConstant([0.0])
             rotationMatrix = zincutils.createRotationMatrixField(azimuth, elevation, roll)
             rotatedSlaveCoordinates = slaveFm.createFieldMatrixMultiply(3, rotationMatrix, slaveCoordinates)
-            print('rotatedSlaveCoordinates.isValid() =',rotatedSlaveCoordinates.isValid())
+            #print('rotatedSlaveCoordinates.isValid() =',rotatedSlaveCoordinates.isValid())
             delta = slaveFm.createFieldSubtract(rotatedSlaveCoordinates, slaveMasterCoordinates)
             error = slaveFm.createFieldMagnitude(delta)
             objective = slaveFm.createFieldNodesetSum(error, slaveMatchedNodesGroup)
-            print('objective.isValid() =', objective.isValid(), '#nodes=', slaveMatchedNodesGroup.getSize())
+            #print('objective.isValid() =', objective.isValid(), '#nodes=', slaveMatchedNodesGroup.getSize())
             #result, matrixBefore = rotationMatrix.evaluateReal(slaveCache, 9)
             #print(result, 'matrixBefore', matrixBefore)
             result, objectiveBefore = objective.evaluateReal(slaveCache, 1)
@@ -438,11 +485,7 @@ class MeshMergerModel(object):
 
     def _createGraphics(self, region):
         fm = region.getFieldmodule()
-        for dimension in range(3,0,-1):
-            mesh = fm.findMeshByDimension(dimension)
-            if mesh.getSize() > 0:
-                break
-        meshDimension = mesh.getDimension()
+        meshDimension = self.getMeshDimension(region)
         coordinates = fm.findFieldByName('coordinates')
         nodeDerivativeFields = [
             fm.createFieldNodeValue(coordinates, Node.VALUE_LABEL_D_DS1, 1),
@@ -473,7 +516,7 @@ class MeshMergerModel(object):
         nodeNumbers.setCoordinateField(coordinates)
         pointattr = nodeNumbers.getGraphicspointattributes()
         pointattr.setLabelField(cmiss_number)
-        pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_NONE)
+        pointattr.setGlyphShapeType(Glyph.SHAPE_TYPE_POINT)
         nodeNumbers.setMaterial(self._materialmodule.findMaterialByName('green'))
         nodeNumbers.setName('displayNodeNumbers')
         nodeNumbers.setVisibilityFlag(self.isDisplayNodeNumbers())
@@ -488,9 +531,10 @@ class MeshMergerModel(object):
         elementNumbers.setVisibilityFlag(self.isDisplayElementNumbers())
         surfaces = scene.createGraphicsSurfaces()
         surfaces.setCoordinateField(coordinates)
-        if meshDimension == 3:
-            surfaces.setExterior(True)
-        surfaces.setMaterial(self._materialmodule.findMaterialByName('trans_blue'))
+        surfaces.setRenderPolygonMode(Graphics.RENDER_POLYGON_MODE_WIREFRAME if self.isDisplaySurfacesWireframe() else Graphics.RENDER_POLYGON_MODE_SHADED)
+        surfaces.setExterior(self.isDisplaySurfacesExterior() if (meshDimension == 3) else False)
+        surfacesMaterial = self._materialmodule.findMaterialByName('trans_blue' if self.isDisplaySurfacesTranslucent() else 'solid_blue')
+        surfaces.setMaterial(surfacesMaterial)
         surfaces.setName('displaySurfaces')
         surfaces.setVisibilityFlag(self.isDisplaySurfaces())
         width = 0.02

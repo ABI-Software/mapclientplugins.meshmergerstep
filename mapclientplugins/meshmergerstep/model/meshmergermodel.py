@@ -61,6 +61,8 @@ class MeshMergerModel(object):
         trans_blue.setAttributeReal(Material.ATTRIBUTE_SHININESS , 0.2)
         glyphmodule = self._context.getGlyphmodule()
         glyphmodule.defineStandardGlyphs()
+        self._isAligned = False
+        self._isFitted = False
         self._mergeNodes = []
         self._settings = {
             'mergeNodes' : '',
@@ -124,7 +126,7 @@ class MeshMergerModel(object):
 
     def mergeNodes(self, masterNodeId, slaveNodeId):
         if not (self.checkMasterNodeId(masterNodeId) and self.checkSlaveNodeId(slaveNodeId)):
-            return false
+            return False
         found = False
         index = 0
         for mergeNodesPair in self._mergeNodes:
@@ -194,15 +196,14 @@ class MeshMergerModel(object):
 
     def setPreviewAlign(self, preview):
         self._settings['previewAlign'] = preview
-        if self.isPreviewAlign():
-            self._mergeMesh()
+        self._mergeMesh()
 
     def isPreviewFit(self):
         return self._settings['previewFit']
 
     def setPreviewFit(self, fit):
         self._settings['previewFit'] = fit
-        if self.isPreviewAlign() and self.isPreviewFit():
+        if self.isPreviewAlign():
             self._mergeMesh()
 
     def _getVisibility(self, graphicsName):
@@ -305,10 +306,12 @@ class MeshMergerModel(object):
     def getMeshDimension(self, region):
         return self._getMesh(region).getDimension()
 
-    def _mergeMesh(self):
+    def _mergeMesh(self, force = False):
+        self._isAligned = False
+        self._isFitted = False
         self._masterRegion = self._context.createRegion()
         self._masterRegion.readFile(self._masterFilename)
-        if len(self._mergeNodes) > 0:
+        if (len(self._mergeNodes) > 0) and (force or self.isPreviewAlign()):
             # perform merge of slave into master
             masterFm = self._masterRegion.getFieldmodule()
             masterNodes = masterFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
@@ -479,6 +482,8 @@ class MeshMergerModel(object):
             faceMesh = masterFm.findMeshByDimension(masterMeshDimension - 1)
             masterFm.defineAllFaces()
             masterFm.endChange()
+            self._isAligned = True
+            self._isFitted = True  # temporary
         self._createGraphics(self._masterRegion)
         if self._sceneChangeCallback is not None:
             self._sceneChangeCallback()
@@ -577,6 +582,8 @@ class MeshMergerModel(object):
         return self._filenameStem + '.ex2'
 
     def _writeModel(self):
+        if not (self._isAligned and self._isFitted):
+            self._mergeMesh(force = True)
         self._masterRegion.writeFile(self.getOutputModelFilename())
 
     def done(self):

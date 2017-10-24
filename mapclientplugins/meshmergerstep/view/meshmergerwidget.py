@@ -26,12 +26,16 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui.setupUi(self)
         self._model = model
         context = model.getContext()
-        self._ui.master_sceneviewerWidget.setContext(context)
         scenefiltermodule = context.getScenefiltermodule()
         self._scenefilterNodes = scenefiltermodule.createScenefilterFieldDomainType(Field.DOMAIN_TYPE_NODES)
+        self._ui.master_sceneviewerWidget.setContext(context)
         self._ui.master_sceneviewerWidget.graphicsInitialized.connect(self._graphicsInitializedMaster)
+        self._ui.master_sceneviewerWidget.setSelectModeNode()
+        self._ui.master_sceneviewerWidget.setSelectionKeyHandling(False)
         self._ui.slave_sceneviewerWidget.setContext(model.getContext())
         self._ui.slave_sceneviewerWidget.graphicsInitialized.connect(self._graphicsInitializedSlave)
+        self._ui.slave_sceneviewerWidget.setSelectModeNode()
+        self._ui.slave_sceneviewerWidget.setSelectionKeyHandling(False)
         self._model.registerSceneChangeCallback(self._sceneChanged)
         self._doneCallback = None
         self._refreshOptions()
@@ -50,7 +54,6 @@ class MeshMergerWidget(QtGui.QWidget):
             scene = self._model.getMasterScene()
             self._ui.master_sceneviewerWidget.setScene(scene)
             self._ui.master_sceneviewerWidget.setSelectionfilter(self._scenefilterNodes)
-            self._ui.master_sceneviewerWidget.setSelectModeNode()
             sceneviewer.setLookatParametersNonSkew([2.0, -2.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0])
             sceneviewer.setTransparencyMode(sceneviewer.TRANSPARENCY_MODE_SLOW)
             self._viewAll()
@@ -65,7 +68,6 @@ class MeshMergerWidget(QtGui.QWidget):
             scene = self._model.getSlaveScene()
             self._ui.slave_sceneviewerWidget.setScene(scene)
             self._ui.slave_sceneviewerWidget.setSelectionfilter(self._scenefilterNodes)
-            self._ui.slave_sceneviewerWidget.setSelectModeNode()
             sceneviewer.setLookatParametersNonSkew([2.0, -2.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0])
             sceneviewer.setTransparencyMode(sceneviewer.TRANSPARENCY_MODE_SLOW)
             self._viewAll()
@@ -122,6 +124,23 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui.displaySurfacesTranslucent_checkBox.clicked.connect(self._displaySurfacesTranslucentClicked)
         self._ui.displaySurfacesWireframe_checkBox.clicked.connect(self._displaySurfacesWireframeClicked)
         self._ui.displayXiAxes_checkBox.clicked.connect(self._displayXiAxesClicked)
+
+    def keyPressEvent(self, event):
+        if (event.key() == QtCore.Qt.Key_S) and (event.isAutoRepeat() == False):
+            self._ui.slave_sceneviewerWidget._selectionKeyPressed = True
+            self._ui.master_sceneviewerWidget._selectionKeyPressed = True
+            event.setAccepted(True)
+        else:
+            event.ignore()
+        
+            
+    def keyReleaseEvent(self, event):
+        if (event.key() == QtCore.Qt.Key_S) and (event.isAutoRepeat() == False):
+            self._ui.slave_sceneviewerWidget._selectionKeyPressed = False
+            self._ui.master_sceneviewerWidget._selectionKeyPressed = False
+            event.setAccepted(True)
+        else:
+            event.ignore()
 
     def getModel(self):
         return self._model

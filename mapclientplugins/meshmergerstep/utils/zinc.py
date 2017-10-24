@@ -3,6 +3,7 @@ Created on Sept 27, 2017
 
 @author: Richard Christie
 '''
+from opencmiss.zinc.field import Field
 from opencmiss.zinc.node import Node
 from opencmiss.zinc.result import RESULT_OK, RESULT_WARNING_PART_DONE
 
@@ -218,3 +219,24 @@ def transformNodeCoordinates(nodeset, field, rotationScale, offset, time = 0.0):
     if not success:
         print('zinc.transformNodeCoordinates: failed to get/set some values')
         raise
+
+
+def getSelectedNode(scene, fieldDomainType = Field.DOMAIN_TYPE_NODES):
+    '''
+    Get the single selected node in the scene. Currently does not handle sub scenes.
+    :param scene: The Zinc scene the node is selected in.
+    :param fieldDomainType: DOMAIN_TYPE_NODES or DOMAIN_TYPE_DATAPOINTS
+    :return: Single selected node in scene, or None.
+    '''
+    selectionGroup = scene.getSelectionField().castGroup()
+    if selectionGroup.isValid():
+        fm = scene.getRegion().getFieldmodule()
+        nodes = fm.findNodesetByFieldDomainType(fieldDomainType)
+        nodeGroupField = selectionGroup.getFieldNodeGroup(nodes)
+        nodesetGroup = nodeGroupField.getNodesetGroup()
+        if nodesetGroup.getSize() == 1:
+            nodeiterator = nodesetGroup.createNodeiterator()
+            node = nodeiterator.next()
+            if node.isValid():
+                return node
+    return None

@@ -34,6 +34,7 @@ class MeshMergerModel(object):
         self._context = Context("MeshMerger")
         self._masterRegion = self._context.createRegion()
         self._slaveRegion = self._context.createRegion()
+        self._slaveRegion.setName("Slave")
         self._masterFilename = masterFilename
         self._slaveFilename = slaveFilename
         tess = self._context.getTessellationmodule().getDefaultTessellation()
@@ -309,7 +310,9 @@ class MeshMergerModel(object):
     def _mergeMesh(self, force = False):
         self._isAligned = False
         self._isFitted = False
+        self._masterRegion.setName("Old Master")
         self._masterRegion = self._context.createRegion()
+        self._masterRegion.setName("New Master")
         self._masterRegion.readFile(self._masterFilename)
         if (len(self._mergeNodes) > 0) and (force or self.isPreviewAlign()):
             # perform merge of slave into master
@@ -322,6 +325,7 @@ class MeshMergerModel(object):
             masterMeshDimension = masterMesh.getDimension()
             # modify copy of slave region
             slaveRegion = self._context.createRegion()
+            self._masterRegion.setName("Merge Slave")
             slaveRegion.readFile(self._slaveFilename)
             slaveFm = slaveRegion.getFieldmodule()
             slaveNodes = slaveFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)

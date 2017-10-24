@@ -7,8 +7,10 @@ from PySide import QtGui, QtCore
 from functools import partial
 from opencmiss.zinc.field import Field
 from opencmiss.zinc.sceneviewer import Sceneviewer
+from opencmiss.zinc.selection import Selectionevent
 
 from mapclientplugins.meshmergerstep.view.ui_meshmergerwidget import Ui_MeshMergerWidget
+from mapclientplugins.meshmergerstep.utils import zinc as zincutils
 
 class MeshMergerWidget(QtGui.QWidget):
     '''
@@ -34,6 +36,9 @@ class MeshMergerWidget(QtGui.QWidget):
         self._doneCallback = None
         self._refreshOptions()
         self._makeConnections()
+        self._masterSelectionnotifier = None
+        self._slaveSelectionnotifier = None
+        self._setupSelectionCallbacks()
 
     def _graphicsInitializedMaster(self):
         '''
@@ -65,15 +70,40 @@ class MeshMergerWidget(QtGui.QWidget):
             sceneviewer.setTransparencyMode(sceneviewer.TRANSPARENCY_MODE_SLOW)
             self._viewAll()
 
+    def _selectionCallbackMaster(self, event):
+        change = event.getChangeFlags()
+        if change & Selectionevent.CHANGE_FLAG_ADD:
+            masterNode = zincutils.getSelectedNode(self._model.getMasterScene())
+            if masterNode is not None:
+                self._ui.mergeNodesEntry_lineEdit.setText(str(masterNode.getIdentifier()) + '=')
+                self._mergeNodesEntryChanged()
+
+    def _selectionCallbackSlave(self, event):
+        change = event.getChangeFlags()
+        if change & Selectionevent.CHANGE_FLAG_ADD:
+            masterNode = zincutils.getSelectedNode(self._model.getMasterScene())
+            slaveNode = zincutils.getSelectedNode(self._model.getSlaveScene())
+            if (masterNode is not None) and (slaveNode is not None):
+                self._ui.mergeNodesEntry_lineEdit.setText(str(masterNode.getIdentifier()) + '=' + str(slaveNode.getIdentifier()))
+                self._mergeNodesEntryChanged()
+
+    def _setupSelectionCallbacks(self):
+        self._masterSelectionnotifier = self._model.getMasterScene().createSelectionnotifier()
+        self._masterSelectionnotifier.setCallback(self._selectionCallbackMaster)
+        if self._slaveSelectionnotifier is None:
+            self._slaveSelectionnotifier = self._model.getSlaveScene().createSelectionnotifier()
+            self._slaveSelectionnotifier.setCallback(self._selectionCallbackSlave)
+
     def _sceneChanged(self):
         sceneviewer = self._ui.master_sceneviewerWidget.getSceneviewer()
         if sceneviewer is not None:
             scene = self._model.getMasterScene()
-            sceneviewer.setScene(scene)
+            self._ui.master_sceneviewerWidget.setScene(scene)
         sceneviewer = self._ui.slave_sceneviewerWidget.getSceneviewer()
         if sceneviewer is not None:
             scene = self._model.getSlaveScene()
-            sceneviewer.setScene(scene)
+            self._ui.slave_sceneviewerWidget.setScene(scene)
+        self._setupSelectionCallbacks()
 
     def _makeConnections(self):
         self._ui.done_button.clicked.connect(self._doneButtonClicked)

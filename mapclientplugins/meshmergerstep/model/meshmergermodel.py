@@ -6,6 +6,7 @@ Created on Sep 10, 2017
 
 import os, sys
 import json
+from PySide import QtGui, QtCore
 
 from opencmiss.zinc.context import Context
 from opencmiss.zinc.result import RESULT_OK
@@ -323,13 +324,26 @@ class MeshMergerModel(object):
             masterCache = masterFm.createFieldcache()
             masterMesh = self._getMesh(self._masterRegion)
             masterMeshDimension = masterMesh.getDimension()
+            # make group of original master nodes and elements for later fitting
+            fieldTrue = masterFm.createFieldConstant([1])
+            origMasterNodeGroup = masterFm.createFieldNodeGroup(masterNodes)
+            origMasterNodesetGroup = origMasterNodeGroup.getNodesetGroup()
+            origMasterNodesetGroup.addNodesConditional(fieldTrue)
+            origMasterElementGroup = masterFm.createFieldElementGroup(masterMesh)
+            origMasterMeshGroup = origMasterElementGroup.getMeshGroup()
+            origMasterMeshGroup.addElementsConditional(fieldTrue)
             # modify copy of slave region
             slaveRegion = self._context.createRegion()
-            self._masterRegion.setName("Merge Slave")
+            slaveRegion.setName("Merge Slave")
             slaveRegion.readFile(self._slaveFilename)
             slaveFm = slaveRegion.getFieldmodule()
             slaveNodes = slaveFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
             maximumSlaveNodeId = zincutils.getMaximumNodeId(slaveNodes)
+            # make reference slave coordinates for fitting, using trick of renaming coordinates and reloading
+            slaveReferenceCoordinatesName = 'slave_reference_coordinates'
+            slaveCoordinates = slaveFm.findFieldByName('coordinates').castFiniteElement()
+            slaveCoordinates.setName(slaveReferenceCoordinatesName)
+            slaveRegion.readFile(self._slaveFilename)
             slaveCoordinates = slaveFm.findFieldByName('coordinates').castFiniteElement()
             # note: can't handle mix of component counts
             componentCount = slaveCoordinates.getNumberOfComponents()
@@ -410,35 +424,35 @@ class MeshMergerModel(object):
             #print('rotatedSlaveCoordinates.isValid() =',rotatedSlaveCoordinates.isValid())
             delta = slaveFm.createFieldSubtract(rotatedSlaveCoordinates, slaveMasterCoordinates)
             error = slaveFm.createFieldMagnitude(delta)
-            objective = slaveFm.createFieldNodesetSum(error, slaveMatchedNodesGroup)
-            #print('objective.isValid() =', objective.isValid(), '#nodes=', slaveMatchedNodesGroup.getSize())
+            alignObjective = slaveFm.createFieldNodesetSum(error, slaveMatchedNodesGroup)
+            #print('alignObjective.isValid() =', alignObjective.isValid(), '#nodes=', slaveMatchedNodesGroup.getSize())
             #result, matrixBefore = rotationMatrix.evaluateReal(slaveCache, 9)
             #print(result, 'matrixBefore', matrixBefore)
-            result, objectiveBefore = objective.evaluateReal(slaveCache, 1)
-            print(result, 'objectiveBefore', objectiveBefore)
+            result, alignObjectiveBefore = alignObjective.evaluateReal(slaveCache, 1)
+            print(result, 'alignObjectiveBefore', alignObjectiveBefore)
             eulerAngles = slaveFm.createFieldConcatenate([azimuth, elevation, roll])
             result, eulerAnglesBefore = eulerAngles.evaluateReal(slaveCache, 3)
             print(result, 'eulerAnglesBefore', eulerAnglesBefore)
 
-            optimisation = slaveFm.createOptimisation()
-            optimisation.setMethod(Optimisation.METHOD_QUASI_NEWTON)
-            optimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_ITERATIONS, 100)
-            optimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS, 1000)
-            optimisation.setAttributeReal(Optimisation.ATTRIBUTE_FUNCTION_TOLERANCE, 1.0e-8)  # 1.0e-8
-            optimisation.addObjectiveField(objective)
-            optimisation.addIndependentField(azimuth)
-            optimisation.addIndependentField(elevation)
-            optimisation.addIndependentField(roll)
+            alignOptimisation = slaveFm.createOptimisation()
+            alignOptimisation.setMethod(Optimisation.METHOD_QUASI_NEWTON)
+            alignOptimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_ITERATIONS, 100)
+            alignOptimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS, 1000)
+            alignOptimisation.setAttributeReal(Optimisation.ATTRIBUTE_FUNCTION_TOLERANCE, 1.0e-8)  # 1.0e-8
+            alignOptimisation.addObjectiveField(alignObjective)
+            alignOptimisation.addIndependentField(azimuth)
+            alignOptimisation.addIndependentField(elevation)
+            alignOptimisation.addIndependentField(roll)
 
-            result = optimisation.optimise()
-            #print('optimisation result =', result)
-            #report = optimisation.getSolutionReport()
+            result = alignOptimisation.optimise()
+            #print('alignOptimisation result =', result)
+            #report = alignOptimisation.getSolutionReport()
             #print(report)
 
             result, matrixAfter = rotationMatrix.evaluateReal(slaveCache, 9)
             #print(result, 'matrixAfter', matrixAfter)
-            result, objectiveAfter = objective.evaluateReal(slaveCache, 1)
-            print(result, 'objectiveAfter', objectiveAfter)
+            result, alignObjectiveAfter = alignObjective.evaluateReal(slaveCache, 1)
+            print(result, 'alignObjectiveAfter', alignObjectiveAfter)
             result, eulerAnglesAfter = eulerAngles.evaluateReal(slaveCache, 3)
             print(result, 'eulerAnglesAfter', eulerAnglesAfter)
 
@@ -464,12 +478,15 @@ class MeshMergerModel(object):
             sire.setResourceDomainTypes(srme, domainTypes)
             slaveRegion.write(sire)
             result, elementBuffer = srme.getBuffer()
-            # destroy all elements and merged nodes then write nodes to memory buffer
+            # destroy all elements and undefine coordinates in merged nodes then write nodes to memory buffer
             slaveMesh.destroyAllElements()
+            nodetemplate_undefine_coordinates = slaveNodes.createNodetemplate()
+            nodetemplate_undefine_coordinates.undefineField(slaveCoordinates)
             for mergeNodesPair in self._mergeNodes:
                 # using master numbering
                 node = slaveNodes.findNodeByIdentifier(mergeNodesPair[0])
-                slaveNodes.destroyNode(node)
+                node.merge(nodetemplate_undefine_coordinates)
+                #slaveNodes.destroyNode(node)
             sirn = slaveRegion.createStreaminformationRegion()
             srmn = sirn.createStreamresourceMemory()
             sirn.setResourceDomainTypes(srmn, Field.DOMAIN_TYPE_NODES)
@@ -487,7 +504,68 @@ class MeshMergerModel(object):
             masterFm.defineAllFaces()
             masterFm.endChange()
             self._isAligned = True
-            self._isFitted = True  # temporary
+
+            masterSlaveReferenceCoordinates = masterFm.findFieldByName(slaveReferenceCoordinatesName)
+            if force or self.isPreviewFit():
+                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                # non-linear fit to original strains
+                # make group of new slave nodes and elements for fitting
+                slaveNodeGroup = masterFm.createFieldNodeGroup(masterNodes)
+                slaveNodesetGroup = slaveNodeGroup.getNodesetGroup()
+                slaveNodesetGroup.addNodesConditional(fieldTrue)
+                slaveNodesetGroup.removeNodesConditional(origMasterNodeGroup)
+                slaveElementGroup = masterFm.createFieldElementGroup(masterMesh)
+                slaveMeshGroup = slaveElementGroup.getMeshGroup()
+                slaveMeshGroup.addElementsConditional(fieldTrue)
+                slaveMeshGroup.removeElementsConditional(origMasterElementGroup)
+
+                offset = masterFm.createFieldConstant([0.0]*componentCount)
+                offsetMasterCoordinates = masterFm.createFieldAdd(masterCoordinates, offset)
+
+                E2 = zincutils.getStrainField(masterCoordinates, masterSlaveReferenceCoordinates, masterMesh)
+                #E2 = zincutils.getStrainField(offsetMasterCoordinates, masterSlaveReferenceCoordinates, masterMesh)
+                #print('E2', E2.isValid())
+                #element = slaveMeshGroup.createElementiterator().next()
+                #xi = [0.5, 0.5, 0.5]
+                #result = masterCache.setMeshLocation(element, xi)
+                #result, values = masterCoordinates.evaluateReal(masterCache, componentCount)
+                #print('masterCoordinates ', result, values)
+                #result, values = masterSlaveReferenceCoordinates.evaluateReal(masterCache, componentCount)
+                #print('masterSlaveReferenceCoordinates ', result, values)
+                #result, values = E2.evaluateReal(masterCache, slaveMeshDimension*slaveMeshDimension)
+                #print('E2 ', result, values)
+
+                strainObjective = masterFm.createFieldMeshIntegralSquares(E2, masterSlaveReferenceCoordinates, slaveMeshGroup)
+                result = strainObjective.setNumbersOfPoints([4])
+                #print('strainObjective.setNumbersOfPoints', result, 'components', strainObjective.getNumberOfComponents(), ' mesh size', slaveMeshGroup.getSize())
+                #print('nodeset size', slaveNodesetGroup.getSize())
+
+                fitOptimisation = masterFm.createOptimisation()
+                fitOptimisation.setMethod(Optimisation.METHOD_LEAST_SQUARES_QUASI_NEWTON)
+                fitOptimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_ITERATIONS, 10)
+                fitOptimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS, 1000)
+                fitOptimisation.setAttributeReal(Optimisation.ATTRIBUTE_FUNCTION_TOLERANCE, 1.0e-8)  # 1.0e-8
+                fitOptimisation.addObjectiveField(strainObjective)
+                fitOptimisation.addIndependentField(masterCoordinates)
+                fitOptimisation.setConditionalField(masterCoordinates, slaveNodeGroup)
+                #fitOptimisation.addIndependentField(offset)
+
+                result, fitObjectiveBefore = strainObjective.evaluateReal(masterCache, componentCount*componentCount)
+                print(result, 'fitObjectiveBefore', fitObjectiveBefore)
+
+                result = fitOptimisation.optimise()
+                print('fitOptimisation result =', result)
+                report = fitOptimisation.getSolutionReport()
+                print(report)
+
+                result, fitObjectiveAfter = strainObjective.evaluateReal(masterCache, componentCount*componentCount)
+                print(result, 'fitObjectiveAfter', fitObjectiveAfter)
+
+                QtGui.QApplication.restoreOverrideCursor()
+                self._isFitted = True  # temporary
+            # don't want masterSlaveReferenceCoordinates in output file:
+            masterSlaveReferenceCoordinates.setManaged(False)
+            masterSlaveReferenceCoordinates = None
         self._createGraphics(self._masterRegion)
         if self._sceneChangeCallback is not None:
             self._sceneChangeCallback()

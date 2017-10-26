@@ -240,3 +240,70 @@ def getSelectedNode(scene, fieldDomainType = Field.DOMAIN_TYPE_NODES):
             if node.isValid():
                 return node
     return None
+
+def getStrainField(coordinates, reference_coordinates, mesh):
+    componentCount = coordinates.getNumberOfComponents()
+    fm = mesh.getFieldmodule()
+    dimension = mesh.getDimension()
+    if componentCount == dimension:
+        F = fm.createFieldGradient(coordinates, reference_coordinates)
+        FT = fm.createFieldTranspose(componentCount, F)
+        C = fm.createFieldMatrixMultiply(componentCount, FT, F)
+        if dimension == 3:
+            Ivalues = [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+        elif dimension == 2:
+            Ivalues = [ 1.0, 0.0, 0.0, 1.0 ]
+        else:
+            Ivalues = [ 1.0 ]
+        I = fm.createFieldConstant(Ivalues)
+        # should multiply following by 0.5, but not needed due to arbitrary weighting
+        E2 = fm.createFieldSubtract(C, I)
+    elif dimension == 2:
+        dX_dxi1 = fm.createFieldDerivative(reference_coordinates, 1)
+        dX_dxi2 = fm.createFieldDerivative(reference_coordinates, 2)
+        crossX3 = fm.createFieldCrossProduct(dX_dxi1, dX_dxi2)
+        crossX2 = fm.createFieldCrossProduct(crossX3, dX_dxi1)
+        norm_dX_dxi1 = fm.createFieldNormalise(dX_dxi1)
+        norm_dX_dxi2 = fm.createFieldNormalise(dX_dxi2)
+        nu1 = norm_dX_dxi1
+        nu2 = fm.createFieldNormalise(crossX2)
+
+        dXP1_dxi1 = fm.createFieldMagnitude(dX_dxi1)
+        dXP1_dxi2 = fm.createFieldDotProduct(nu1, dX_dxi2)
+        dXP2_dxi1 = 0.0
+        dXP2_dxi2 = fm.createFieldDotProduct(nu2, dX_dxi2)
+
+        A = dXP1_dxi1
+        B = dXP1_dxi2
+        C = 0.0
+        D = dXP2_dxi2
+
+        # det = 1/AD
+        # dxi1_dXP1 = 1/A
+        # dxi1_dXP2 = -B/AD
+        # dxi2_dXP1 = 0
+        # dxi2_dXP2 = 1/D
+
+        dx_dxi1 = fm.createFieldDerivative(coordinates, 1)
+        dx_dxi2 = fm.createFieldDerivative(coordinates, 2)
+        dx_dxi = fm.createFieldConcatenate([dx_dxi1, dx_dxi2])
+        dx_dXP1 = fm.createFieldDivide(dx_dxi1, A)
+        dx_dXP2 = fm.createFieldSubtract(fm.createFieldDivide(dx_dxi2, D),
+            fm.createFieldDivide(fm.createFieldMultiply(B, dx_dxi1), fm.createFieldMultiply(A, D)))
+
+        FT = fm.createFieldConcatenate([dx_dXP1, dx_dXP2])
+        F = fm.createFieldTranspose(2, FT)
+        C = fm.createFieldMatrixMultiply(2, FT, F)
+        I = fm.createFieldConstant([ 1.0, 0.0, 0.0, 1.0 ])
+        # should multiply following by 0.5, but not needed due to arbitrary weighting
+        E2 = fm.createFieldSubtract(C, I)
+    elif dimension == 1:
+        dX_dxi1 = fm.createFieldDerivative(reference_coordinates, 1)
+        FXT_FX = fm.createFieldMatrixMultiply(componentCount, dX_dxi1, dX_dxi1)
+        dx_dxi1 = fm.createFieldDerivative(coordinates, 1)
+        FxT_Fx = fm.createFieldMatrixMultiply(componentCount, dx_dxi1, dx_dxi1)
+        # should multiply following by 0.5, but not needed due to arbitrary weighting
+        E2 = fm.createFieldSubtract(FxT_Fx, FXT_FX)
+    else:
+        return None
+    return E2

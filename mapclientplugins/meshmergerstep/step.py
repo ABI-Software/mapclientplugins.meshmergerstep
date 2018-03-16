@@ -52,8 +52,14 @@ class MeshMergerStep(WorkflowStepMountPoint):
         self._model = MeshMergerModel(self._location, self._config['identifier'],
             self._portData0, self._portData1)
         self._view = MeshMergerWidget(self._model)
-        self._view.registerDoneExecution(self._doneExecution)
+        self._view.registerDoneExecution(self._myDoneExecution)
         self._setCurrentWidget(self._view)
+
+    def _myDoneExecution(self):
+        self._portData2 = self._model.getOutputModelFilename()
+        self._view = None
+        self._model = None
+        self._doneExecution()
 
     def setPortData(self, index, dataIn):
         """
@@ -77,7 +83,6 @@ class MeshMergerStep(WorkflowStepMountPoint):
 
         :param index: Index of the port to return.
         """
-        self._portData2 = self._model.getOutputModelFilename()
         return self._portData2 # http://physiomeproject.org/workflow/1.0/rdf-schema#file_location
 
     def configure(self):

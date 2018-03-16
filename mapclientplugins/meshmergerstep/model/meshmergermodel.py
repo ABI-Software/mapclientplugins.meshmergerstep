@@ -63,12 +63,13 @@ class MeshMergerModel(object):
         trans_blue.setAttributeReal(Material.ATTRIBUTE_SHININESS , 0.2)
         glyphmodule = self._context.getGlyphmodule()
         glyphmodule.defineStandardGlyphs()
-        self._isAligned = False
+        self._isMerged = False
         self._isFitted = False
         self._mergeNodes = []
         self._settings = {
             'mergeNodes' : '',
-            'previewAlign' : True,
+            'previewMerge' : True,
+            'fit' : False,
             'previewFit' : False,
             'displayAxes' : True,
             'displayElementNumbers' : True,
@@ -84,7 +85,7 @@ class MeshMergerModel(object):
         self._loadSettings()
         self._slaveRegion.readFile(self._slaveFilename)
         self._createGraphics(self._slaveRegion)
-        if self._settings['previewAlign'] and (len(self._mergeNodes) > 0):
+        if self._settings['previewMerge'] and (len(self._mergeNodes) > 0):
             # _mergeMesh reads the master mesh and creates graphics
             self._mergeMesh()
         else:
@@ -146,7 +147,7 @@ class MeshMergerModel(object):
         if not found:
             self._mergeNodes.append((masterNodeId, slaveNodeId))
         self._makeMergeNodesText()
-        if self.isPreviewAlign():
+        if self.isPreviewMerge():
             self._mergeMesh()
         return True
 
@@ -155,7 +156,7 @@ class MeshMergerModel(object):
             if mergeNodesPair[0] == masterNodeId:
                 self._mergeNodes.remove(mergeNodesPair)
                 self._makeMergeNodesText()
-                if self.isPreviewAlign():
+                if self.isPreviewMerge():
                     self._mergeMesh()
                 return True
         return False
@@ -193,19 +194,27 @@ class MeshMergerModel(object):
         with open(self._filenameStem + '-settings.json', 'w') as f:
             f.write(json.dumps(self._settings, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
-    def isPreviewAlign(self):
-        return self._settings['previewAlign']
+    def isPreviewMerge(self):
+        return self._settings['previewMerge']
 
-    def setPreviewAlign(self, preview):
-        self._settings['previewAlign'] = preview
+    def setPreviewMerge(self, previewMerge):
+        self._settings['previewMerge'] = previewMerge
         self._mergeMesh()
+
+    def isFit(self):
+        return self._settings['fit']
+
+    def setFit(self, fit):
+        self._settings['fit'] = fit
+        if self.isPreviewFit():
+            self._mergeMesh()
 
     def isPreviewFit(self):
         return self._settings['previewFit']
 
-    def setPreviewFit(self, fit):
-        self._settings['previewFit'] = fit
-        if self.isPreviewAlign():
+    def setPreviewFit(self, previewFit):
+        self._settings['previewFit'] = previewFit
+        if self.isFit():
             self._mergeMesh()
 
     def _getVisibility(self, graphicsName):
@@ -309,13 +318,13 @@ class MeshMergerModel(object):
         return self._getMesh(region).getDimension()
 
     def _mergeMesh(self, force = False):
-        self._isAligned = False
+        self._isMerged = False
         self._isFitted = False
         self._masterRegion.setName("Old Master")
         self._masterRegion = self._context.createRegion()
         self._masterRegion.setName("New Master")
         self._masterRegion.readFile(self._masterFilename)
-        if (len(self._mergeNodes) > 0) and (force or self.isPreviewAlign()):
+        if (len(self._mergeNodes) > 0) and (force or self.isPreviewMerge()):
             # perform merge of slave into master
             masterFm = self._masterRegion.getFieldmodule()
             masterNodes = masterFm.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
@@ -503,10 +512,11 @@ class MeshMergerModel(object):
             faceMesh = masterFm.findMeshByDimension(masterMeshDimension - 1)
             masterFm.defineAllFaces()
             masterFm.endChange()
-            self._isAligned = True
+            self._isMerged = True
 
             masterSlaveReferenceCoordinates = masterFm.findFieldByName(slaveReferenceCoordinatesName)
-            if force or self.isPreviewFit():
+
+            if self.isFit() and (force or self.isPreviewFit()):
                 QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
                 # non-linear fit to original strains
                 # make group of new slave nodes and elements for fitting
@@ -520,20 +530,32 @@ class MeshMergerModel(object):
                 slaveMeshGroup.removeElementsConditional(origMasterElementGroup)
 
                 offset = masterFm.createFieldConstant([0.0]*componentCount)
+                print('offset', offset.getNumberOfComponents())
                 offsetMasterCoordinates = masterFm.createFieldAdd(masterCoordinates, offset)
+                conditionalOffsetMasterCoordinates = masterFm.createFieldIf(slaveNodeGroup, offsetMasterCoordinates, masterCoordinates)
+                print('conditionalOffsetMasterCoordinates', conditionalOffsetMasterCoordinates.isValid(), conditionalOffsetMasterCoordinates.getNumberOfComponents())
 
                 E2 = zincutils.getStrainField(masterCoordinates, masterSlaveReferenceCoordinates, masterMesh)
-                #E2 = zincutils.getStrainField(offsetMasterCoordinates, masterSlaveReferenceCoordinates, masterMesh)
-                #print('E2', E2.isValid())
-                #element = slaveMeshGroup.createElementiterator().next()
-                #xi = [0.5, 0.5, 0.5]
-                #result = masterCache.setMeshLocation(element, xi)
-                #result, values = masterCoordinates.evaluateReal(masterCache, componentCount)
-                #print('masterCoordinates ', result, values)
-                #result, values = masterSlaveReferenceCoordinates.evaluateReal(masterCache, componentCount)
-                #print('masterSlaveReferenceCoordinates ', result, values)
-                #result, values = E2.evaluateReal(masterCache, slaveMeshDimension*slaveMeshDimension)
-                #print('E2 ', result, values)
+                #E2 = zincutils.getStrainField(conditionalOffsetMasterCoordinates, masterSlaveReferenceCoordinates, masterMesh)
+                print('E2', E2.isValid())
+                element = slaveMeshGroup.createElementiterator().next()
+                xi = [0.5, 0.5, 0.5]
+                result = masterCache.setMeshLocation(element, xi)
+                result, values = masterSlaveReferenceCoordinates.evaluateReal(masterCache, componentCount)
+                print('masterSlaveReferenceCoordinates ', result, values)
+                result, values = masterCoordinates.evaluateReal(masterCache, componentCount)
+                print('masterCoordinates ', result, values)
+                result, values = offsetMasterCoordinates.evaluateReal(masterCache, componentCount)
+                print('offsetMasterCoordinates ', result, values)
+                result, values = conditionalOffsetMasterCoordinates.evaluateReal(masterCache, componentCount)
+                print('conditionalOffsetMasterCoordinates ', result, values)
+                diffOp = masterMesh.getChartDifferentialoperator(1, 1)
+                result, values = conditionalOffsetMasterCoordinates.evaluateDerivative(diffOp, masterCache, componentCount)
+                print('conditionalOffsetMasterCoordinates derivative ', result, values)
+                result, values = E2.evaluateReal(masterCache, slaveMeshDimension*slaveMeshDimension)
+                print('E2 ', result, values)
+
+                #fieldassignment = masterCoordinates.createFieldassignment(
 
                 strainObjective = masterFm.createFieldMeshIntegralSquares(E2, masterSlaveReferenceCoordinates, slaveMeshGroup)
                 result = strainObjective.setNumbersOfPoints([4])
@@ -541,14 +563,15 @@ class MeshMergerModel(object):
                 #print('nodeset size', slaveNodesetGroup.getSize())
 
                 fitOptimisation = masterFm.createOptimisation()
-                fitOptimisation.setMethod(Optimisation.METHOD_LEAST_SQUARES_QUASI_NEWTON)
+                fitOptimisation.setMethod(Optimisation.METHOD_LEAST_SQUARES_QUASI_NEWTON)  # AAA
+                #fitOptimisation.setMethod(Optimisation.METHOD_QUASI_NEWTON)  # BBB
                 fitOptimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_ITERATIONS, 10)
                 fitOptimisation.setAttributeInteger(Optimisation.ATTRIBUTE_MAXIMUM_FUNCTION_EVALUATIONS, 1000)
                 fitOptimisation.setAttributeReal(Optimisation.ATTRIBUTE_FUNCTION_TOLERANCE, 1.0e-8)  # 1.0e-8
                 fitOptimisation.addObjectiveField(strainObjective)
-                fitOptimisation.addIndependentField(masterCoordinates)
+                fitOptimisation.addIndependentField(masterCoordinates)  # AAA
                 fitOptimisation.setConditionalField(masterCoordinates, slaveNodeGroup)
-                #fitOptimisation.addIndependentField(offset)
+                #fitOptimisation.addIndependentField(offset)  # BBB
 
                 result, fitObjectiveBefore = strainObjective.evaluateReal(masterCache, componentCount*componentCount)
                 print(result, 'fitObjectiveBefore', fitObjectiveBefore)
@@ -664,7 +687,7 @@ class MeshMergerModel(object):
         return self._filenameStem + '.ex2'
 
     def _writeModel(self):
-        if not (self._isAligned and self._isFitted):
+        if not (self._isMerged and self._isFitted):
             self._mergeMesh(force = True)
         self._masterRegion.writeFile(self.getOutputModelFilename())
 

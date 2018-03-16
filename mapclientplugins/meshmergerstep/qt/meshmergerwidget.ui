@@ -89,7 +89,7 @@
             <x>0</x>
             <y>0</y>
             <width>364</width>
-            <height>564</height>
+            <height>585</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -143,7 +143,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QFrame" name="mergeOptions_frame">
+              <widget class="QFrame" name="mergeNodes_frame">
                <property name="frameShape">
                 <enum>QFrame::StyledPanel</enum>
                </property>
@@ -190,18 +190,49 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QCheckBox" name="previewAlign_checkBox">
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="mergeOptions_groupBox">
+               <property name="title">
+                <string>Merge options:</string>
+               </property>
+               <layout class="QGridLayout" name="gridLayout">
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="previewMerge_checkBox">
                   <property name="text">
-                   <string>Preview align</string>
+                   <string>Preview merge</string>
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QCheckBox" name="previewFit_checkBox">
-                  <property name="text">
-                   <string>Preview fit</string>
+                <item row="1" column="0">
+                 <widget class="QFrame" name="fit_frame">
+                  <property name="frameShape">
+                   <enum>QFrame::StyledPanel</enum>
                   </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Raised</enum>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_6">
+                   <property name="margin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="fit_checkBox">
+                     <property name="text">
+                      <string>Fit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="previewFit_checkBox">
+                     <property name="text">
+                      <string>Preview fit</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </widget>
                 </item>
                </layout>

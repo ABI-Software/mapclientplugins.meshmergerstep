@@ -112,7 +112,8 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui.viewAll_button.clicked.connect(self._viewAll)
         self._ui.mergeNodesEntry_lineEdit.returnPressed.connect(self._mergeNodesEntryChanged)
         self._ui.mergeNodesDelete_pushButton.clicked.connect(self._meshNodesDeleteClicked)
-        self._ui.previewAlign_checkBox.clicked.connect(self._previewAlignClicked)
+        self._ui.previewMerge_checkBox.clicked.connect(self._previewMergeClicked)
+        self._ui.fit_checkBox.clicked.connect(self._fitClicked)
         self._ui.previewFit_checkBox.clicked.connect(self._previewFitClicked)
         self._ui.displayAxes_checkBox.clicked.connect(self._displayAxesClicked)
         self._ui.displayElementNumbers_checkBox.clicked.connect(self._displayElementNumbersClicked)
@@ -149,6 +150,7 @@ class MeshMergerWidget(QtGui.QWidget):
         self._doneCallback = doneCallback
 
     def _doneButtonClicked(self):
+        self._ui.dockWidget.setFloating(False)
         self._model.done()
         self._model = None
         self._doneCallback()
@@ -156,7 +158,8 @@ class MeshMergerWidget(QtGui.QWidget):
     def _refreshOptions(self):
         self._ui.identifier_label.setText('Identifier:  ' + self._model.getIdentifier())
         self._ui.mergeNodes_plainTextEdit.setPlainText(self._model.getMergeNodesText())
-        self._ui.previewAlign_checkBox.setChecked(self._model.isPreviewAlign())
+        self._ui.previewMerge_checkBox.setChecked(self._model.isPreviewMerge())
+        self._ui.fit_checkBox.setChecked(self._model.isFit())
         self._ui.previewFit_checkBox.setChecked(self._model.isPreviewFit())
         self._ui.displayAxes_checkBox.setChecked(self._model.isDisplayAxes())
         self._ui.displayElementNumbers_checkBox.setChecked(self._model.isDisplayElementNumbers())
@@ -205,8 +208,11 @@ class MeshMergerWidget(QtGui.QWidget):
             pass
         self._ui.mergeNodesEntry_lineEdit.setText('')
 
-    def _previewAlignClicked(self):
-        self._model.setPreviewAlign(self._ui.previewAlign_checkBox.isChecked())
+    def _previewMergeClicked(self):
+        self._model.setPreviewMerge(self._ui.previewMerge_checkBox.isChecked())
+
+    def _fitClicked(self):
+        self._model.setFit(self._ui.fit_checkBox.isChecked())
 
     def _previewFitClicked(self):
         self._model.setPreviewFit(self._ui.previewFit_checkBox.isChecked())

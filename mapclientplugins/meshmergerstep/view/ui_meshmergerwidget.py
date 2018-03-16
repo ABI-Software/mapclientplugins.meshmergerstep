@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapclientplugins\meshmergerstep\qt\meshmergerwidget.ui'
 #
-# Created: Fri Mar 16 15:51:00 2018
+# Created: Fri Mar 16 16:29:50 2018
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -24,7 +24,7 @@ class Ui_MeshMergerWidget(object):
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.dockWidget = QtGui.QDockWidget(MeshMergerWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.dockWidget.sizePolicy().hasHeightForWidth())
         self.dockWidget.setSizePolicy(sizePolicy)
@@ -54,7 +54,7 @@ class Ui_MeshMergerWidget(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents_2 = QtGui.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 364, 585))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 364, 564))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -213,7 +213,7 @@ class Ui_MeshMergerWidget(object):
         self.horizontalLayout.addWidget(self.dockWidget)
         self.sceneviewer_frame = QtGui.QFrame(MeshMergerWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(1)
+        sizePolicy.setHorizontalStretch(4)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sceneviewer_frame.sizePolicy().hasHeightForWidth())
         self.sceneviewer_frame.setSizePolicy(sizePolicy)

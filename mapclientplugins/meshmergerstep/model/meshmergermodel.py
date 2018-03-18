@@ -458,6 +458,12 @@ class MeshMergerModel(object):
 
             zincutils.transformNodeCoordinates(slaveNodes, slaveCoordinates, matrixAfter, masterMeanX)
 
+            # release field handles, otherwise temporary slaveMasterCoordinates is output
+            alignOptimisation = None
+            delta = None
+            error = None
+            alignObjective = None
+
             # restart element numbering to be above master
             maximumMasterElementId = zincutils.getMaximumElementId(masterMesh)
             zincutils.offsetElementIds(slaveMesh, maximumMasterElementId + slaveMesh.getSize())
@@ -482,11 +488,14 @@ class MeshMergerModel(object):
             slaveMesh.destroyAllElements()
             nodetemplate_undefine_coordinates = slaveNodes.createNodetemplate()
             nodetemplate_undefine_coordinates.undefineField(slaveCoordinates)
+            nodetemplate_undefine_coordinates.undefineField(slaveMasterCoordinates)
             for masterNodeId in self._mergeNodes:
                 # using master numbering
                 node = slaveNodes.findNodeByIdentifier(masterNodeId)
                 node.merge(nodetemplate_undefine_coordinates)
                 #slaveNodes.destroyNode(node)
+            slaveMasterCoordinates = None
+
             sirn = slaveRegion.createStreaminformationRegion()
             srmn = sirn.createStreamresourceMemory()
             sirn.setResourceDomainTypes(srmn, Field.DOMAIN_TYPE_NODES)
@@ -577,9 +586,25 @@ class MeshMergerModel(object):
 
                 QtGui.QApplication.restoreOverrideCursor()
                 self._isFitted = True  # temporary
+
             # don't want masterSlaveReferenceCoordinates in output file:
+            elementtemplate_undefine_coordinates = masterMesh.createElementtemplate()
+            elementtemplate_undefine_coordinates.undefineField(masterSlaveReferenceCoordinates)
+            elementiter = masterMesh.createElementiterator()
+            element = elementiter.next()
+            while element.isValid():
+                element.merge(elementtemplate_undefine_coordinates)
+                element = elementiter.next()
+            nodetemplate_undefine_coordinates = masterNodes.createNodetemplate()
+            nodetemplate_undefine_coordinates.undefineField(masterSlaveReferenceCoordinates)
+            nodeiter = masterNodes.createNodeiterator()
+            node = nodeiter.next()
+            while node.isValid():
+                node.merge(nodetemplate_undefine_coordinates)
+                node = nodeiter.next()
             masterSlaveReferenceCoordinates.setManaged(False)
             masterSlaveReferenceCoordinates = None
+
         self._createGraphics(self._masterRegion)
         if self._sceneChangeCallback is not None:
             self._sceneChangeCallback()

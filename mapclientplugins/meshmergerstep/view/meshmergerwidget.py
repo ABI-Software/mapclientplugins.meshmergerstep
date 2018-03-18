@@ -111,7 +111,9 @@ class MeshMergerWidget(QtGui.QWidget):
         self._ui.done_button.clicked.connect(self._doneButtonClicked)
         self._ui.viewAll_button.clicked.connect(self._viewAll)
         self._ui.mergeNodesEntry_lineEdit.returnPressed.connect(self._mergeNodesEntryChanged)
-        self._ui.mergeNodesDelete_pushButton.clicked.connect(self._meshNodesDeleteClicked)
+        self._ui.mergeNodesDelete_pushButton.clicked.connect(self._mergeNodesDeleteClicked)
+        self._ui.mergeNodesApply_pushButton.clicked.connect(self._mergeNodesApplyClicked)
+        self._ui.mergeNodesList_plainTextEdit.textChanged.connect(self._mergeNodesListTextChanged)
         self._ui.previewMerge_checkBox.clicked.connect(self._previewMergeClicked)
         self._ui.fit_checkBox.clicked.connect(self._fitClicked)
         self._ui.previewFit_checkBox.clicked.connect(self._previewFitClicked)
@@ -133,8 +135,7 @@ class MeshMergerWidget(QtGui.QWidget):
             event.setAccepted(True)
         else:
             event.ignore()
-        
-            
+
     def keyReleaseEvent(self, event):
         if (event.key() == QtCore.Qt.Key_S) and (event.isAutoRepeat() == False):
             self._ui.slave_sceneviewerWidget._selectionKeyPressed = False
@@ -157,7 +158,8 @@ class MeshMergerWidget(QtGui.QWidget):
 
     def _refreshOptions(self):
         self._ui.identifier_label.setText('Identifier:  ' + self._model.getIdentifier())
-        self._ui.mergeNodes_plainTextEdit.setPlainText(self._model.getMergeNodesText())
+        self._ui.mergeNodesApply_pushButton.setEnabled(False)
+        self._ui.mergeNodesList_plainTextEdit.setPlainText(self._model.getMergeNodesText())
         self._ui.previewMerge_checkBox.setChecked(self._model.isPreviewMerge())
         self._ui.fit_checkBox.setChecked(self._model.isFit())
         self._ui.previewFit_checkBox.setChecked(self._model.isPreviewFit())
@@ -187,7 +189,7 @@ class MeshMergerWidget(QtGui.QWidget):
                     pass
             if slaveNodeId >= 0:
                 if self._model.mergeNodes(masterNodeId, slaveNodeId):
-                    self._ui.mergeNodes_plainTextEdit.setPlainText(self._model.getMergeNodesText())
+                    self._ui.mergeNodesList_plainTextEdit.setPlainText(self._model.getMergeNodesText())
             else:
                 newText = str(masterNodeId) + '='
                 slaveNodeId = self._model.findMergeSlaveNodeId(masterNodeId)
@@ -197,16 +199,25 @@ class MeshMergerWidget(QtGui.QWidget):
                 return
         self._ui.mergeNodesEntry_lineEdit.setText('')
 
-    def _meshNodesDeleteClicked(self):
+    def _mergeNodesDeleteClicked(self):
         try:
             text = self._ui.mergeNodesEntry_lineEdit.text()
             nodeIds = text.split('=')
             masterNodeId = int(nodeIds[0])
             if self._model.deleteMergeNode(masterNodeId):
-                self._ui.mergeNodes_plainTextEdit.setPlainText(self._model.getMergeNodesText())
+                self._ui.mergeNodesList_plainTextEdit.setPlainText(self._model.getMergeNodesText())
         except:
             pass
         self._ui.mergeNodesEntry_lineEdit.setText('')
+
+    def _mergeNodesListTextChanged(self):
+        self._ui.mergeNodesApply_pushButton.setEnabled(True)
+
+    def _mergeNodesApplyClicked(self):
+        self._model.setMergeNodesText(self._ui.mergeNodesList_plainTextEdit.toPlainText())
+        self._ui.mergeNodesList_plainTextEdit.setPlainText(self._model.getMergeNodesText())
+        self._ui.mergeNodesEntry_lineEdit.setText('')
+        self._ui.mergeNodesApply_pushButton.setEnabled(False)
 
     def _previewMergeClicked(self):
         self._model.setPreviewMerge(self._ui.previewMerge_checkBox.isChecked())

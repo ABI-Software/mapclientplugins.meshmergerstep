@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'mapclientplugins\meshmergerstep\qt\meshmergerwidget.ui'
 #
-# Created: Fri Mar 16 16:29:50 2018
+# Created: Mon Mar 19 10:45:27 2018
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -106,11 +106,14 @@ class Ui_MeshMergerWidget(object):
         self.mergeNodesDelete_pushButton = QtGui.QPushButton(self.mergeNodesEntry_widget)
         self.mergeNodesDelete_pushButton.setObjectName("mergeNodesDelete_pushButton")
         self.horizontalLayout_4.addWidget(self.mergeNodesDelete_pushButton)
+        self.mergeNodesApply_pushButton = QtGui.QPushButton(self.mergeNodesEntry_widget)
+        self.mergeNodesApply_pushButton.setObjectName("mergeNodesApply_pushButton")
+        self.horizontalLayout_4.addWidget(self.mergeNodesApply_pushButton)
         self.verticalLayout_4.addWidget(self.mergeNodesEntry_widget)
-        self.mergeNodes_plainTextEdit = QtGui.QPlainTextEdit(self.mergeNodes_frame)
-        self.mergeNodes_plainTextEdit.setReadOnly(True)
-        self.mergeNodes_plainTextEdit.setObjectName("mergeNodes_plainTextEdit")
-        self.verticalLayout_4.addWidget(self.mergeNodes_plainTextEdit)
+        self.mergeNodesList_plainTextEdit = QtGui.QPlainTextEdit(self.mergeNodes_frame)
+        self.mergeNodesList_plainTextEdit.setReadOnly(False)
+        self.mergeNodesList_plainTextEdit.setObjectName("mergeNodesList_plainTextEdit")
+        self.verticalLayout_4.addWidget(self.mergeNodesList_plainTextEdit)
         self.verticalLayout_3.addWidget(self.mergeNodes_frame)
         self.mergeOptions_groupBox = QtGui.QGroupBox(self.scrollAreaWidgetContents_2)
         self.mergeOptions_groupBox.setObjectName("mergeOptions_groupBox")
@@ -245,7 +248,12 @@ class Ui_MeshMergerWidget(object):
         self.dockWidget.setWindowTitle(QtGui.QApplication.translate("MeshMergerWidget", "Mesh Merger Controls", None, QtGui.QApplication.UnicodeUTF8))
         self.identifier_label.setText(QtGui.QApplication.translate("MeshMergerWidget", "Identifier", None, QtGui.QApplication.UnicodeUTF8))
         self.mergeNodes_label.setText(QtGui.QApplication.translate("MeshMergerWidget", "Merge nodes master=slave (e.g. 1=55):", None, QtGui.QApplication.UnicodeUTF8))
+        self.mergeNodesEntry_lineEdit.setToolTip(QtGui.QApplication.translate("MeshMergerWidget", "<html><head/><body><p>Enter a master node, or master=slave pair.</p><p>Or hold down S-key and click nodes in the 3D view.</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.mergeNodesDelete_pushButton.setToolTip(QtGui.QApplication.translate("MeshMergerWidget", "<html><head/><body><p>Delete map for currently selected node</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.mergeNodesDelete_pushButton.setText(QtGui.QApplication.translate("MeshMergerWidget", "Delete", None, QtGui.QApplication.UnicodeUTF8))
+        self.mergeNodesApply_pushButton.setToolTip(QtGui.QApplication.translate("MeshMergerWidget", "<html><head/><body><p>Apply edits in merge nodes list text edit</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.mergeNodesApply_pushButton.setText(QtGui.QApplication.translate("MeshMergerWidget", "Apply", None, QtGui.QApplication.UnicodeUTF8))
+        self.mergeNodesList_plainTextEdit.setToolTip(QtGui.QApplication.translate("MeshMergerWidget", "<html><head/><body><p>List of master=slave nodes to merge.</p><p>After editing click \'Apply\' to apply them.</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.mergeOptions_groupBox.setTitle(QtGui.QApplication.translate("MeshMergerWidget", "Merge options:", None, QtGui.QApplication.UnicodeUTF8))
         self.previewMerge_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Preview merge", None, QtGui.QApplication.UnicodeUTF8))
         self.fit_checkBox.setText(QtGui.QApplication.translate("MeshMergerWidget", "Fit", None, QtGui.QApplication.UnicodeUTF8))

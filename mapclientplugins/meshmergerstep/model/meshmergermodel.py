@@ -65,7 +65,7 @@ class MeshMergerModel(object):
         glyphmodule.defineStandardGlyphs()
         self._isMerged = False
         self._isFitted = False
-        self._mergeNodes = []
+        self._mergeNodes = {}
         self._settings = {
             'mergeNodes' : '',
             'previewMerge' : True,
@@ -95,6 +95,11 @@ class MeshMergerModel(object):
     def getMergeNodesText(self):
         return self._settings['mergeNodes']
 
+    def setMergeNodesText(self, mergeNodesText):
+        self._parseMergeNodesText(mergeNodesText)
+        if self.isPreviewMerge():
+            self._mergeMesh()
+
     def checkMasterNodeId(self, masterNodeId):
         masterNodes = self._masterRegion.getFieldmodule().findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
         masterNode = masterNodes.findNodeByIdentifier(masterNodeId)
@@ -106,59 +111,45 @@ class MeshMergerModel(object):
         return slaveNode.isValid()
 
     def findMergeSlaveNodeId(self, masterNodeId):
-        for mergeNodesPair in self._mergeNodes:
-            if mergeNodesPair[0] == masterNodeId:
-                return mergeNodesPair[1]
-        return -1
+        return self._mergeNodes.get(masterNodeId, -1)
 
     def _makeMergeNodesText(self):
         mergeNodesText = ''
-        for mergeNodesPair in self._mergeNodes:
-            mergeNodesText += str(mergeNodesPair[0]) + '=' + str(mergeNodesPair[1]) + '\n'
+        for masterNodeId in sorted(self._mergeNodes.keys()):
+            mergeNodesText += str(masterNodeId) + '=' + str(self._mergeNodes[masterNodeId]) + '\n'
         self._settings['mergeNodes'] = mergeNodesText
 
     def _parseMergeNodesText(self, mergeNodesText):
-        self._mergeNodes = []
-        for mergeNodesText in mergeNodesText.split():
+        self._mergeNodes = {}
+        for s in mergeNodesText.split():
             try:
-                ends = mergeNodesText.split('=')
-                self._mergeNodes.append((int(ends[0]), int(ends[1])))
+                ends = s.split('=')
+                self._mergeNodes[int(ends[0])] = int(ends[1])
             except:
                 pass
         self._makeMergeNodesText()
 
     def mergeNodes(self, masterNodeId, slaveNodeId):
+        '''
+        :return:  True if valid and changing, otherwise False.
+        '''
         if not (self.checkMasterNodeId(masterNodeId) and self.checkSlaveNodeId(slaveNodeId)):
             return False
-        found = False
-        index = 0
-        for mergeNodesPair in self._mergeNodes:
-            if mergeNodesPair[0] == masterNodeId:
-                if mergeNodesPair[1] == slaveNodeId:
-                    return False
-                self._mergeNodes[index] = (masterNodeId, slaveNodeId)
-                found = True
-                break
-            elif mergeNodesPair[0] > masterNodeId:
-                self._mergeNodes.insert(index, (masterNodeId, slaveNodeId))
-                found = True
-                break
-            index += 1
-        if not found:
-            self._mergeNodes.append((masterNodeId, slaveNodeId))
+        if slaveNodeId == self._mergeNodes.get(masterNodeId, -1):
+            return False
+        self._mergeNodes[masterNodeId] = slaveNodeId
         self._makeMergeNodesText()
         if self.isPreviewMerge():
             self._mergeMesh()
         return True
 
     def deleteMergeNode(self, masterNodeId):
-        for mergeNodesPair in self._mergeNodes:
-            if mergeNodesPair[0] == masterNodeId:
-                self._mergeNodes.remove(mergeNodesPair)
-                self._makeMergeNodesText()
-                if self.isPreviewMerge():
-                    self._mergeMesh()
-                return True
+        if masterNodeId in self._mergeNodes:
+            self._mergeNodes.pop(masterNodeId)
+            self._makeMergeNodesText()
+            if self.isPreviewMerge():
+                self._mergeMesh()
+            return True
         return False
 
     def getContext(self):
@@ -371,17 +362,17 @@ class MeshMergerModel(object):
             nodetemplate.defineField(slaveMasterCoordinates)
             masterMeanX = [0.0]*componentCount
             slaveMeanX = [0.0]*componentCount
-            for mergeNodesPair in self._mergeNodes:
-                masterNode = masterNodes.findNodeByIdentifier(mergeNodesPair[0])
+            for masterNodeId, slaveNodeId in self._mergeNodes.items():
+                masterNode = masterNodes.findNodeByIdentifier(masterNodeId)
                 masterCache.setNode(masterNode)
                 result, masterX = masterCoordinates.evaluateReal(masterCache, componentCount)
-                #print('master ',mergeNodesPair[0],'result',result,masterX)
-                slaveNode = slaveNodes.findNodeByIdentifier(mergeNodesPair[1])
+                #print('master ', masterNodeId,'result',result,masterX)
+                slaveNode = slaveNodes.findNodeByIdentifier(slaveNodeId)
                 slaveNode.merge(nodetemplate)
                 slaveMatchedNodesGroup.addNode(slaveNode)
                 slaveCache.setNode(slaveNode)
                 result, slaveX = slaveCoordinates.evaluateReal(slaveCache, componentCount)
-                #print(' slave ',mergeNodesPair[1],'result',result,slaveX)
+                #print(' slave ', slaveNodeId,'result',result,slaveX)
                 result = slaveMasterCoordinates.assignReal(slaveCache, masterX)
                 for c in range(componentCount):
                     masterMeanX[c] += masterX[c]
@@ -411,9 +402,9 @@ class MeshMergerModel(object):
             while node.isValid():
                 oldId = node.getIdentifier()
                 newId = -1
-                for mergeNodesPair in self._mergeNodes:
-                    if oldId == (mergeNodesPair[1] + idOffset):
-                        newId = mergeNodesPair[0]
+                for masterNodeId, slaveNodeId in self._mergeNodes.items():
+                    if oldId == (slaveNodeId + idOffset):
+                        newId = masterNodeId
                         break;
                 if newId < 0:
                     newId = nextNewId
@@ -491,9 +482,9 @@ class MeshMergerModel(object):
             slaveMesh.destroyAllElements()
             nodetemplate_undefine_coordinates = slaveNodes.createNodetemplate()
             nodetemplate_undefine_coordinates.undefineField(slaveCoordinates)
-            for mergeNodesPair in self._mergeNodes:
+            for masterNodeId in self._mergeNodes:
                 # using master numbering
-                node = slaveNodes.findNodeByIdentifier(mergeNodesPair[0])
+                node = slaveNodes.findNodeByIdentifier(masterNodeId)
                 node.merge(nodetemplate_undefine_coordinates)
                 #slaveNodes.destroyNode(node)
             sirn = slaveRegion.createStreaminformationRegion()

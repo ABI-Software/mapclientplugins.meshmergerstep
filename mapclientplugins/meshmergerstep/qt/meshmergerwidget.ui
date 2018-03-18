@@ -171,12 +171,29 @@
                     <number>0</number>
                    </property>
                    <item>
-                    <widget class="QLineEdit" name="mergeNodesEntry_lineEdit"/>
+                    <widget class="QLineEdit" name="mergeNodesEntry_lineEdit">
+                     <property name="toolTip">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter a master node, or master=slave pair.&lt;/p&gt;&lt;p&gt;Or hold down S-key and click nodes in the 3D view.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                    </widget>
                    </item>
                    <item>
                     <widget class="QPushButton" name="mergeNodesDelete_pushButton">
+                     <property name="toolTip">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Delete map for currently selected node&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
                      <property name="text">
                       <string>Delete</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="mergeNodesApply_pushButton">
+                     <property name="toolTip">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Apply edits in merge nodes list text edit&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                     <property name="text">
+                      <string>Apply</string>
                      </property>
                     </widget>
                    </item>
@@ -184,9 +201,12 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPlainTextEdit" name="mergeNodes_plainTextEdit">
+                 <widget class="QPlainTextEdit" name="mergeNodesList_plainTextEdit">
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;List of master=slave nodes to merge.&lt;/p&gt;&lt;p&gt;After editing click 'Apply' to apply them.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
                   <property name="readOnly">
-                   <bool>true</bool>
+                   <bool>false</bool>
                   </property>
                  </widget>
                 </item>

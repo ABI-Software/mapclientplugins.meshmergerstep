@@ -7,6 +7,45 @@ from opencmiss.zinc.field import Field
 from opencmiss.zinc.node import Node
 from opencmiss.zinc.result import RESULT_OK, RESULT_WARNING_PART_DONE
 
+def getSceneSelectionGroup(scene):
+    """
+    Get or create a selection group for scene.
+    """
+    selectionField = scene.getSelectionField()
+    selectionGroup = selectionField.castGroup()
+    if not selectionGroup.isValid():
+        fm = scene.getRegion().getFieldmodule()
+        selectionFieldName = 'cmiss_selection'
+        selectionField = fm.findFieldByName(selectionFieldName)
+        selectionGroup = selectionField.castGroup()
+        if not selectionGroup.isValid():
+            fm.beginChange()
+            selectionField = fm.createFieldGroup()
+            selectionField.setName(selectionFieldName)
+            selectionGroup = selectionField.castGroup()
+            fm.endChange()
+        scene.setSelectionField(selectionField)
+    return selectionGroup
+
+def selectRegionNode(region, node):
+    """
+    Currently only handles node being in region, not a subregion.
+    :node:  A Zinc Node, or None to clear selection.
+    """
+    scene = region.getScene()
+    region.beginHierarchicalChange()
+    scene.beginChange()
+    selectionGroup = getSceneSelectionGroup(region.getScene())
+    selectionGroup.clear()
+    if (node is not None) and node.isValid():
+        nodeGroupField = selectionGroup.getFieldNodeGroup(node.getNodeset())
+        if not nodeGroupField.isValid():
+            nodeGroupField = selectionGroup.createFieldNodeGroup(node.getNodeset())
+        nodesetGroup = nodeGroupField.getNodesetGroup()
+        result = nodesetGroup.addNode(node)
+    region.endHierarchicalChange()
+    scene.endChange()
+
 def createRotationMatrixField(azimuth, elevation, roll):
     """
     Create 3x3 rotation matrix field from scalar azimuth, elevation and roll Euler angle fields

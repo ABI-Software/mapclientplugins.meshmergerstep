@@ -110,8 +110,30 @@ class MeshMergerModel(object):
         slaveNode = slaveNodes.findNodeByIdentifier(slaveNodeId)
         return slaveNode.isValid()
 
+    def selectMasterNodeId(self, masterNodeId):
+        '''
+        Ensure the graphical selection for the master scene is cleared and just the supplied node selected.
+        :masterNodeId: Identifier of node to select, or None to only clear.
+        '''
+        nodes = self._masterRegion.getFieldmodule().findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
+        node = nodes.findNodeByIdentifier(masterNodeId) if (masterNodeId is not None) else None
+        zincutils.selectRegionNode(self._masterRegion, node)
+
+    def selectSlaveNodeId(self, slaveNodeId):
+        '''
+        Ensure the graphical selection for the slave scene is cleared and just the supplied node selected.
+        :slaveNodeId: Identifier of node to select, or None to only clear.
+        '''
+        nodes = self._slaveRegion.getFieldmodule().findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
+        node = nodes.findNodeByIdentifier(slaveNodeId) if (slaveNodeId is not None) else None
+        zincutils.selectRegionNode(self._slaveRegion, node)
+
     def findMergeSlaveNodeId(self, masterNodeId):
-        return self._mergeNodes.get(masterNodeId, -1)
+        '''
+        Get slave node for master node, if exists, otherwise None.
+        :masterNodeId:  Identifier of master node to match.
+        '''
+        return self._mergeNodes.get(masterNodeId)
 
     def _makeMergeNodesText(self):
         mergeNodesText = ''
@@ -135,7 +157,7 @@ class MeshMergerModel(object):
         '''
         if not (self.checkMasterNodeId(masterNodeId) and self.checkSlaveNodeId(slaveNodeId)):
             return False
-        if slaveNodeId == self._mergeNodes.get(masterNodeId, -1):
+        if slaveNodeId == self._mergeNodes.get(masterNodeId):
             return False
         self._mergeNodes[masterNodeId] = slaveNodeId
         self._makeMergeNodesText()
@@ -429,10 +451,10 @@ class MeshMergerModel(object):
             #result, matrixBefore = rotationMatrix.evaluateReal(slaveCache, 9)
             #print(result, 'matrixBefore', matrixBefore)
             result, alignObjectiveBefore = alignObjective.evaluateReal(slaveCache, 1)
-            print(result, 'alignObjectiveBefore', alignObjectiveBefore)
+            #print(result, 'alignObjectiveBefore', alignObjectiveBefore)
             eulerAngles = slaveFm.createFieldConcatenate([azimuth, elevation, roll])
             result, eulerAnglesBefore = eulerAngles.evaluateReal(slaveCache, 3)
-            print(result, 'eulerAnglesBefore', eulerAnglesBefore)
+            #print(result, 'eulerAnglesBefore', eulerAnglesBefore)
 
             alignOptimisation = slaveFm.createOptimisation()
             alignOptimisation.setMethod(Optimisation.METHOD_QUASI_NEWTON)
@@ -452,9 +474,9 @@ class MeshMergerModel(object):
             result, matrixAfter = rotationMatrix.evaluateReal(slaveCache, 9)
             #print(result, 'matrixAfter', matrixAfter)
             result, alignObjectiveAfter = alignObjective.evaluateReal(slaveCache, 1)
-            print(result, 'alignObjectiveAfter', alignObjectiveAfter)
+            #print(result, 'alignObjectiveAfter', alignObjectiveAfter)
             result, eulerAnglesAfter = eulerAngles.evaluateReal(slaveCache, 3)
-            print(result, 'eulerAnglesAfter', eulerAnglesAfter)
+            #print(result, 'eulerAnglesAfter', eulerAnglesAfter)
 
             zincutils.transformNodeCoordinates(slaveNodes, slaveCoordinates, matrixAfter, masterMeanX)
 

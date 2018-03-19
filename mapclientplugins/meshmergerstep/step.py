@@ -49,8 +49,18 @@ class MeshMergerStep(WorkflowStepMountPoint):
         Kick off the execution of the step, in this case an interactive dialog.
         User invokes the _doneExecution() method when finished, via pushbutton.
         """
-        self._model = MeshMergerModel(self._location, self._config['identifier'],
-            self._portData0, self._portData1)
+        self._model = MeshMergerModel()
+        try_again = True
+        while try_again:
+            try:
+                self._model.configure(self._location, self._config['identifier'], self._portData0, self._portData1)
+                try_again = False
+            except Exception as e:
+                result = QtGui.QMessageBox.warning(None, 'Mesh Merger Configuration Failure',
+                    'Unexpected exception \'' + str(e) + '\'. Do you want to retry (recommended)?.',
+                    QtGui.QMessageBox.Retry | QtGui.QMessageBox.Abort, QtGui.QMessageBox.Retry)
+                if result == QtGui.QMessageBox.Abort:
+                    raise
         self._view = MeshMergerWidget(self._model)
         self._view.registerDoneExecution(self._myDoneExecution)
         self._setCurrentWidget(self._view)

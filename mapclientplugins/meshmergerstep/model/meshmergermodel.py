@@ -25,19 +25,18 @@ class MeshMergerModel(object):
     Framework for generating meshes of a number of types, with mesh type specific options
     '''
 
-    def __init__(self, location, identifier, masterFilename, slaveFilename):
+    def __init__(self):
         '''
-        Constructor
+        Constructor, to be followed by configure().
         '''
-        self._location = location
-        self._identifier = identifier
-        self._filenameStem = os.path.join(self._location, self._identifier)
+        self._location = None
+        self._identifier = None
+        self._filenameStem = None
         self._context = Context("MeshMerger")
-        self._masterRegion = self._context.createRegion()
-        self._slaveRegion = self._context.createRegion()
-        self._slaveRegion.setName("Slave")
-        self._masterFilename = masterFilename
-        self._slaveFilename = slaveFilename
+        self._masterRegion = None
+        self._slaveRegion = None
+        self._masterFilename = None
+        self._slaveFilename = None
         tess = self._context.getTessellationmodule().getDefaultTessellation()
         tess.setRefinementFactors(12)
         self._sceneChangeCallback = None
@@ -82,15 +81,45 @@ class MeshMergerModel(object):
             'displaySurfacesWireframe' : False,
             'displayXiAxes' : False
         }
+
+    def configure(self, location, identifier, masterFilename, slaveFilename):
+        '''
+        Second part of construction, separated to catch exceptions for missing files.
+        '''
+        self._location = location
+        self._identifier = identifier
+        self._filenameStem = os.path.join(self._location, self._identifier)
+        self._masterRegion = self._context.createRegion()
+        self._masterRegion.setName("Master")
+        self._slaveRegion = self._context.createRegion()
+        self._slaveRegion.setName("Slave")
+        self._masterFilename = masterFilename
+        self._slaveFilename = slaveFilename
         self._loadSettings()
-        self._slaveRegion.readFile(self._slaveFilename)
+
+        result = self._slaveRegion.readFile(self._slaveFilename)
+        if result != RESULT_OK:
+            self._writeLogMessages()
+            raise IOError('Failed to read slave file ' + self._slaveFilename)
         self._createGraphics(self._slaveRegion)
+
         if self._settings['previewMerge'] and (len(self._mergeNodes) > 0):
             # _mergeMesh reads the master mesh and creates graphics
             self._mergeMesh()
         else:
-            self._masterRegion.readFile(self._masterFilename)
+            result = self._masterRegion.readFile(self._masterFilename)
+            if result != RESULT_OK:
+                self._writeLogMessages()
+                raise IOError('Failed to read master file ' + self._masterFilename)
             self._createGraphics(self._masterRegion)
+
+    def _writeLogMessages(self):
+        logger = self._context.getLogger()
+        loggerMessageCount = logger.getNumberOfMessages()
+        if loggerMessageCount > 0:
+            for i in range(1, loggerMessageCount + 1):
+                print(logger.getMessageTypeAtIndex(i), logger.getMessageTextAtIndex(i))
+            logger.removeAllMessages()
 
     def getMergeNodesText(self):
         return self._settings['mergeNodes']
@@ -200,7 +229,7 @@ class MeshMergerModel(object):
             with open(self._filenameStem + '-settings.json', 'r') as f:
                 self._settings.update(json.loads(f.read()))
             self._parseMergeNodesText(self._settings['mergeNodes'])
-        except:
+        except FileNotFoundError:
             pass  # no settings saved yet
 
     def _saveSettings(self):
@@ -336,7 +365,11 @@ class MeshMergerModel(object):
         self._masterRegion.setName("Old Master")
         self._masterRegion = self._context.createRegion()
         self._masterRegion.setName("New Master")
-        self._masterRegion.readFile(self._masterFilename)
+        result = self._masterRegion.readFile(self._masterFilename)
+        if result != RESULT_OK:
+            self._writeLogMessages()
+            raise IOError('Failed to read master file ' + self._masterFilename + ' during merge')
+ 
         if (len(self._mergeNodes) > 0) and (force or self.isPreviewMerge()):
             # perform merge of slave into master
             masterFm = self._masterRegion.getFieldmodule()

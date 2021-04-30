@@ -3,7 +3,7 @@ Created on Sep 10, 2017
 
 @author: Richard Christie
 '''
-from PySide import QtGui, QtCore
+from PySide2 import QtCore, QtWidgets
 from functools import partial
 from opencmiss.zinc.field import Field
 from opencmiss.zinc.sceneviewer import Sceneviewer
@@ -12,7 +12,7 @@ from opencmiss.zinc.selection import Selectionevent
 from mapclientplugins.meshmergerstep.view.ui_meshmergerwidget import Ui_MeshMergerWidget
 from mapclientplugins.meshmergerstep.utils import zinc as zincutils
 
-class MeshMergerWidget(QtGui.QWidget):
+class MeshMergerWidget(QtWidgets.QWidget):
     '''
     classdocs
     '''

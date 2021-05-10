@@ -6,7 +6,7 @@ Created on Sep 10, 2017
 
 import os, sys
 import json
-from PySide import QtGui, QtCore
+from PySide2 import QtCore, QtWidgets
 
 from opencmiss.zinc.context import Context
 from opencmiss.zinc.result import RESULT_OK
@@ -572,7 +572,7 @@ class MeshMergerModel(object):
             masterSlaveReferenceCoordinates = masterFm.findFieldByName(slaveReferenceCoordinatesName)
 
             if self.isFit() and (force or self.isPreviewFit()):
-                QtGui.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
                 # non-linear fit to original strains
                 # make group of new slave nodes and elements for fitting
                 slaveNodeGroup = masterFm.createFieldNodeGroup(masterNodes)
@@ -639,7 +639,7 @@ class MeshMergerModel(object):
                 result, fitObjectiveAfter = strainObjective.evaluateReal(masterCache, componentCount*componentCount)
                 print(result, 'fitObjectiveAfter', fitObjectiveAfter)
 
-                QtGui.QApplication.restoreOverrideCursor()
+                QtWidgets.QApplication.restoreOverrideCursor()
                 self._isFitted = True  # temporary
 
             # don't want masterSlaveReferenceCoordinates in output file:

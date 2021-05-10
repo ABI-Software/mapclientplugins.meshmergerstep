@@ -4,7 +4,7 @@ MAP Client Plugin Step
 """
 import json
 
-from PySide import QtGui
+from PySide2 import QtGui, QtWidgets
 
 from mapclient.mountpoints.workflowstep import WorkflowStepMountPoint
 from mapclientplugins.meshmergerstep.configuredialog import ConfigureDialog
@@ -56,10 +56,10 @@ class MeshMergerStep(WorkflowStepMountPoint):
                 self._model.configure(self._location, self._config['identifier'], self._portData0, self._portData1)
                 try_again = False
             except Exception as e:
-                result = QtGui.QMessageBox.warning(None, 'Mesh Merger Configuration Failure',
+                result = QtWidgets.QMessageBox.warning(None, 'Mesh Merger Configuration Failure',
                     'Unexpected exception \'' + str(e) + '\'. Do you want to retry (recommended)?.',
-                    QtGui.QMessageBox.Retry | QtGui.QMessageBox.Abort, QtGui.QMessageBox.Retry)
-                if result == QtGui.QMessageBox.Abort:
+                    QtWidgets.QMessageBox.Retry | QtWidgets.QMessageBox.Abort, QtWidgets.QMessageBox.Retry)
+                if result == QtWidgets.QMessageBox.Abort:
                     raise
         self._view = MeshMergerWidget(self._model)
         self._view.registerDoneExecution(self._myDoneExecution)
@@ -103,7 +103,7 @@ class MeshMergerStep(WorkflowStepMountPoint):
         then set:
             self._configured = True
         """
-        dlg = ConfigureDialog()
+        dlg = ConfigureDialog(QtWidgets.QApplication.activeWindow().current_widget())
         dlg.identifierOccursCount = self._identifierOccursCount
         dlg.setConfig(self._config)
         dlg.validate()

@@ -6,7 +6,7 @@ Created on Sep 10, 2017
 
 import os, sys
 import json
-from PySide2 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 from cmlibs.zinc.context import Context
 from cmlibs.zinc.result import RESULT_OK

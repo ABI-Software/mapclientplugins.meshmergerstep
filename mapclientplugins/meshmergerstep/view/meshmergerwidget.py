@@ -3,7 +3,7 @@ Created on Sep 10, 2017
 
 @author: Richard Christie
 '''
-from PySide2 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 from functools import partial
 from cmlibs.zinc.field import Field
 from cmlibs.zinc.sceneviewer import Sceneviewer

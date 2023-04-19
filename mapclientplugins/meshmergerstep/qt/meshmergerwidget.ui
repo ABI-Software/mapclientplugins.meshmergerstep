@@ -544,7 +544,7 @@
   <customwidget>
    <class>SceneviewerWidget</class>
    <extends>QWidget</extends>
-   <header>opencmiss/zincwidgets/sceneviewerwidget.h</header>
+   <header>cmlibs/widgets/sceneviewerwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

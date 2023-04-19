@@ -3,9 +3,9 @@ Created on Sept 27, 2017
 
 @author: Richard Christie
 '''
-from opencmiss.zinc.field import Field
-from opencmiss.zinc.node import Node
-from opencmiss.zinc.result import RESULT_OK, RESULT_WARNING_PART_DONE
+from cmlibs.zinc.field import Field
+from cmlibs.zinc.node import Node
+from cmlibs.zinc.result import RESULT_OK, RESULT_WARNING_PART_DONE
 
 def getSceneSelectionGroup(scene):
     """

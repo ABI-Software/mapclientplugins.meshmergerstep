@@ -21,8 +21,8 @@ readme = readfile("README.rst", split=True)[3:]  # skip title
 #requires = readfile("requirements.txt")
 requires = [
     # minimal requirements listing
-    "opencmiss.zinc >= 3.3",  # not yet on pypi - need manual install from opencmiss.org
-    "opencmiss.zincwidgets >= 2.0.2"
+    "cmlbis.zinc",
+    "cmlibs.widgets"
 ]
 source_license = readfile("LICENSE")
 

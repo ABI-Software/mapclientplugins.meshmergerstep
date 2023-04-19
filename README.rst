@@ -1,4 +1,4 @@
 Mesh Merger
 ===========
 
-MAP Client plugin for merging two meshes into one using OpenCMISS-Zinc.
+MAP Client plugin for merging two meshes into one using Zinc.

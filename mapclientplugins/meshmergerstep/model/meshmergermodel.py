@@ -8,14 +8,14 @@ import os, sys
 import json
 from PySide2 import QtCore, QtWidgets
 
-from opencmiss.zinc.context import Context
-from opencmiss.zinc.result import RESULT_OK
-from opencmiss.zinc.field import Field
-from opencmiss.zinc.glyph import Glyph
-from opencmiss.zinc.graphics import Graphics
-from opencmiss.zinc.material import Material
-from opencmiss.zinc.node import Node
-from opencmiss.zinc.optimisation import Optimisation
+from cmlibs.zinc.context import Context
+from cmlibs.zinc.result import RESULT_OK
+from cmlibs.zinc.field import Field
+from cmlibs.zinc.glyph import Glyph
+from cmlibs.zinc.graphics import Graphics
+from cmlibs.zinc.material import Material
+from cmlibs.zinc.node import Node
+from cmlibs.zinc.optimisation import Optimisation
 from mapclientplugins.meshmergerstep.utils import zinc as zincutils
 
 STRING_FLOAT_FORMAT = '{:.8g}'
